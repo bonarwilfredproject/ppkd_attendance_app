@@ -240,6 +240,11 @@ class _HistoryPageState extends State<HistoryPage> {
                         ],
                       ),
                     ],
+                    if (late)
+                      const Text(
+                        'Terlambat',
+                        style: TextStyle(color: Colors.red, fontSize: 12),
+                      ),
                   ],
                 ),
               );
