@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ppkd_attendance_app/presentation/pages/dashboard/dashboard_page.dart';
+import 'package:ppkd_attendance_app/presentation/pages/history/history_page.dart';
 import 'package:ppkd_attendance_app/presentation/pages/profile/profile_page.dart';
 import 'presentation/pages/auth/login_page.dart';
 import 'presentation/pages/auth/splash_page.dart';
@@ -22,6 +23,7 @@ class MyApp extends StatelessWidget {
         '/login': (context) => const LoginPage(),
         '/register': (context) => const RegisterPage(),
         '/dashboard': (context) => const DashboardPage(),
+        '/history': (context) => const HistoryPage(),
         '/profile': (context) => const ProfilePage(),
       },
     );

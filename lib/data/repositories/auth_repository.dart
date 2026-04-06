@@ -8,6 +8,10 @@ class AuthRepository {
     });
   }
 
+  Future<Map<String, dynamic>> getBatches() async {
+    return await ApiService.get("/batches");
+  }
+
   Future<Map<String, dynamic>> register(
     String name,
     String email,
@@ -16,18 +20,26 @@ class AuthRepository {
     int trainingId,
     String jenisKelamin,
   ) async {
-    return await ApiService.post("/register", {
+    final body = {
       "name": name,
       "email": email,
       "password": password,
+      "jenis_kelamin": jenisKelamin,
       "batch_id": batchId,
       "training_id": trainingId,
-      "jenis_kelamin": jenisKelamin,
-    });
+    };
+
+    print("REGISTER BODY: $body");
+
+    return await ApiService.post("/register", body);
   }
 
   Future<Map<String, dynamic>> getProfile() async {
     return await ApiService.get("/profile");
+  }
+
+  Future<Map<String, dynamic>> updateProfile(String name, String email) async {
+    return await ApiService.put("/profile", {"name": name, "email": email});
   }
 
   Future<Map<String, dynamic>> absen(double lat, double lng) async {
