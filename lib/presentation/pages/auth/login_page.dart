@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ppkd_attendance_app/core/services/auth_services.dart';
+import 'package:ppkd_attendance_app/presentation/pages/profile/change_password_page.dart';
 import '../../../data/repositories/auth_repository.dart';
 
 class LoginPage extends StatefulWidget {
@@ -18,6 +19,34 @@ class _LoginPageState extends State<LoginPage> {
   bool _rememberMe = false;
 
   final AuthRepository repo = AuthRepository();
+  @override
+  void initState() {
+    super.initState();
+
+    emailC.addListener(() {
+      setState(() {});
+    });
+
+    loadRememberMe();
+  }
+
+  Future<void> loadRememberMe() async {
+    final data = await AuthService.getRememberMe();
+
+    if (data['remember'] == true) {
+      setState(() {
+        _rememberMe = true;
+        emailC.text = data['email'];
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    emailC.dispose();
+    passC.dispose();
+    super.dispose();
+  }
 
   Future<void> handleLogin() async {
     if (emailC.text.isEmpty || passC.text.isEmpty) {
@@ -38,6 +67,9 @@ class _LoginPageState extends State<LoginPage> {
         final token = res['data']['token'];
 
         await AuthService.saveToken(token);
+
+        // 🔥 SIMPAN REMEMBER ME
+        await AuthService.saveRememberMe(emailC.text.trim(), _rememberMe);
 
         ScaffoldMessenger.of(
           context,
@@ -145,7 +177,7 @@ class _LoginPageState extends State<LoginPage> {
                     children: [
                       // Username field
                       const Text(
-                        'Username',
+                        'Email',
                         style: TextStyle(
                           color: Color(0xFF4A4A4A),
                           fontSize: 14,
@@ -276,13 +308,57 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                           const Spacer(),
                           GestureDetector(
-                            onTap: () {
-                              // Handle forgot password
+                            onTap: () async {
+                              final email = emailC.text.trim();
+
+                              if (email.isEmpty) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Isi email dulu'),
+                                  ),
+                                );
+                                return;
+                              }
+
+                              setState(() => isLoading = true);
+
+                              try {
+                                final res = await repo.forgotPassword(email);
+
+                                setState(() => isLoading = false);
+
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      res['message'] ?? 'Terjadi kesalahan',
+                                    ),
+                                  ),
+                                );
+
+                                if (res['message'] ==
+                                    "OTP berhasil dikirim ke email") {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) =>
+                                          ChangePasswordPage(email: email),
+                                    ),
+                                  );
+                                }
+                              } catch (e) {
+                                setState(() => isLoading = false);
+
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Error: $e')),
+                                );
+                              }
                             },
-                            child: const Text(
+                            child: Text(
                               'Forgot Password',
                               style: TextStyle(
-                                color: Color(0xFF222222),
+                                color: emailC.text.isEmpty
+                                    ? Colors.grey
+                                    : const Color(0xFF222222),
                                 fontSize: 13,
                                 fontWeight: FontWeight.bold,
                               ),

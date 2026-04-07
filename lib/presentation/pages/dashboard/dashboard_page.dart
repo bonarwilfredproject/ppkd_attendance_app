@@ -10,6 +10,7 @@ import 'package:ppkd_attendance_app/data/repositories/attendance_repository.dart
 import 'package:ppkd_attendance_app/data/repositories/auth_repository.dart';
 
 import 'package:ppkd_attendance_app/presentation/pages/check_in/check_in_page.dart';
+import 'package:ppkd_attendance_app/presentation/pages/izin/izin_page.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -42,6 +43,10 @@ class _DashboardPageState extends State<DashboardPage> {
   bool sudahAbsenHariIni = false;
   String? checkInToday;
   String? checkOutToday;
+  bool get isCheckedIn => checkInToday != null;
+  bool get isCheckedOut => checkOutToday != null;
+  String? todayStatus; // NEW
+  String? profilePhotoUrl;
   // ── init ─────────────────────────────────────────────────
   @override
   void initState() {
@@ -85,6 +90,7 @@ class _DashboardPageState extends State<DashboardPage> {
 
       userBatch = data['batch_ke']?.toString() ?? '';
       userTraining = data['training_title']?.toString() ?? '';
+      profilePhotoUrl = data['profile_photo_url'];
     });
   }
 
@@ -106,18 +112,84 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Future<void> loadToday() async {
     try {
-      final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
       final res = await repo.getTodayAttendance();
-
       final data = res['data'];
 
       setState(() {
         checkInToday = data['check_in_time'];
         checkOutToday = data['check_out_time'];
+        todayStatus = data['status']; // 🔥 penting
       });
     } catch (e) {
       debugPrint('Error loadToday: $e');
     }
+  }
+
+  Widget _buildStatusBadge() {
+    String text = 'Belum Absen';
+    Color color = Colors.grey;
+
+    if (todayStatus == 'izin') {
+      text = 'IZIN';
+      color = Colors.orange;
+    } else if (isCheckedIn) {
+      final late = _isLate(checkInToday);
+      if (late) {
+        text = 'TERLAMBAT';
+        color = Colors.red;
+      } else {
+        text = 'HADIR';
+        color = Colors.green;
+      }
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          color: color,
+          fontWeight: FontWeight.bold,
+          fontSize: 12,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHistoryBadge(Map item) {
+    final status = item['status'];
+    final late = _isLate(item['check_in_time']);
+
+    String text = 'HADIR';
+    Color color = Colors.green;
+
+    if (status == 'izin') {
+      text = 'IZIN';
+      color = Colors.orange;
+    } else if (late) {
+      text = 'TELAT';
+      color = Colors.red;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
   }
 
   Future<void> loadAttendance() async {
@@ -216,96 +288,122 @@ class _DashboardPageState extends State<DashboardPage> {
 
   // ── header ────────────────────────────────────────────────
   Widget _buildHeader() {
-    return Stack(
-      children: [
-        // blue background (right side)
-        Positioned.fill(
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFF5B7BFF), Color(0xFF7FA1FF)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(28),
+          bottomRight: Radius.circular(28),
+        ),
+      ),
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
           child: Row(
             children: [
-              Expanded(
-                flex: 2,
-                child: Container(color: const Color(0xFFD4E600)),
+              // 🔥 Avatar modern
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFFFCA65), Color(0xFFFFA726)],
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: profilePhotoUrl != null && profilePhotoUrl!.isNotEmpty
+                      ? Image.network(
+                          profilePhotoUrl!,
+                          fit: BoxFit.cover,
+                          width: 56,
+                          height: 56,
+                          errorBuilder: (_, __, ___) => const Icon(
+                            Icons.person,
+                            color: Colors.white,
+                            size: 32,
+                          ),
+                        )
+                      : const Icon(Icons.person, color: Colors.white, size: 32),
+                ),
               ),
+
+              const SizedBox(width: 14),
+
+              // 🔥 User info (lebih rapi)
               Expanded(
-                flex: 3,
-                child: Container(color: const Color(0xFF5B7BFF)),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Hello, ${userName ?? 'User'} 👋',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+
+                    Text(
+                      userTraining ?? '-',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+
+                    const SizedBox(height: 2),
+
+                    Text(
+                      'Batch ${userBatch ?? '-'}',
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.85),
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // 🔥 Logout button (clean)
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: IconButton(
+                  icon: const Icon(Icons.logout, color: Colors.white),
+                  onPressed: () {
+                    Navigator.pushReplacementNamed(context, '/login');
+                  },
+                ),
               ),
             ],
           ),
         ),
-        SafeArea(
-          bottom: false,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
-            child: Row(
-              children: [
-                // avatar
-                Container(
-                  width: 52,
-                  height: 52,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFCA65),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(
-                    Icons.person,
-                    color: Colors.white,
-                    size: 32,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                // name & role
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        userName ?? 'User',
-                        style: const TextStyle(
-                          color: Color(0xFF3B3BFF),
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text.rich(
-                        TextSpan(
-                          children: [
-                            TextSpan(text: userTraining ?? '-'),
-                            const TextSpan(text: ' - '),
-                            TextSpan(
-                              text: 'Batch ${userBatch ?? '-'}',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                        style: const TextStyle(
-                          color: Color(0xFF3B3BFF),
-                          fontSize: 13,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                // logout
-                IconButton(
-                  icon: const Icon(Icons.logout, color: Color(0xFF3B3BFF)),
-                  onPressed: () =>
-                      Navigator.pushReplacementNamed(context, '/login'),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
+      ),
     );
   }
 
   // ── attendance card ───────────────────────────────────────
   Widget _buildAttendanceCard() {
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+      margin: const EdgeInsets.fromLTRB(16, 36, 16, 0),
       transform: Matrix4.translationValues(0, -16, 0),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -397,79 +495,99 @@ class _DashboardPageState extends State<DashboardPage> {
               ],
             ),
           ),
+          if (checkInToday != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Text(
+                'Masuk: $checkInToday  |  Keluar: ${checkOutToday ?? '--'}',
+                style: const TextStyle(fontSize: 13, color: Colors.grey),
+              ),
+            ),
+          _buildStatusBadge(),
+          const SizedBox(height: 10),
           // Check in / Check out buttons
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-            child: Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: isLoading
-                        ? null
-                        : () async {
-                            final result = await Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) =>
-                                    const CheckInPage(isCheckOut: false),
-                              ),
-                            );
-                            // refresh data jika check in berhasil
-                            if (result == true) loadAttendance();
-                          },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF5B7BFF),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      elevation: 0,
-                    ),
-                    child: const Text(
-                      'Check in',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: isLoading || isCheckedOut || todayStatus == 'izin'
+                    ? null
+                    : () async {
+                        final isCheckOutMode = isCheckedIn;
+
+                        final result = await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                CheckInPage(isCheckOut: isCheckOutMode),
+                          ),
+                        );
+
+                        if (result == true) {
+                          loadToday(); // refresh status hari ini
+                          loadStats(); // refresh statistik
+                          loadAttendance();
+                        }
+                      },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: todayStatus == 'izin'
+                      ? Colors.grey
+                      : isCheckedOut
+                      ? Colors.grey
+                      : isCheckedIn
+                      ? Colors.orange
+                      : const Color(0xFF5B7BFF),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  elevation: 0,
+                ),
+                child: Text(
+                  todayStatus == 'izin'
+                      ? 'Sedang Izin'
+                      : isCheckedOut
+                      ? 'Sudah Check Out'
+                      : isCheckedIn
+                      ? 'Check Out'
+                      : 'Check In',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: isLoading
-                        ? null
-                        : () async {
-                            final result = await Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) =>
-                                    const CheckInPage(isCheckOut: true),
-                              ),
-                            );
-                            // refresh data jika check out berhasil
-                            if (result == true) loadAttendance();
-                          },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF5B7BFF),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      elevation: 0,
-                    ),
-                    child: const Text(
-                      'Check out',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+            child: SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () async {
+                  final result = await Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const IzinPage()),
+                  );
+
+                  if (result == true) {
+                    loadToday();
+                    loadStats();
+                  }
+                },
+                icon: const Icon(Icons.event_busy),
+                label: const Text("Ajukan Izin"),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF5B7BFF),
+                  side: const BorderSide(color: Color(0xFF5B7BFF)),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-              ],
+              ),
             ),
           ),
         ],
@@ -542,24 +660,28 @@ class _DashboardPageState extends State<DashboardPage> {
                   child: Row(
                     children: [
                       Expanded(
-                        child: Text(
-                          _formatHistoryDate(dateStr),
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: Colors.black87,
-                          ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _formatHistoryDate(dateStr),
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: Colors.black87,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '$checkIn - $checkOut',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: late ? Colors.red : Colors.grey,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      Text(
-                        '$checkIn - $checkOut',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: late ? Colors.red : Colors.black87,
-                          fontWeight: late
-                              ? FontWeight.w500
-                              : FontWeight.normal,
-                        ),
-                      ),
+                      _buildHistoryBadge(item),
                     ],
                   ),
                 );
@@ -601,8 +723,27 @@ class _DashboardPageState extends State<DashboardPage> {
               return GestureDetector(
                 onTap: () {
                   setState(() => _selectedIndex = i);
-                  if (i == 2) Navigator.pushNamed(context, '/history');
-                  if (i == 3) Navigator.pushNamed(context, '/profile');
+
+                  if (i == 0) {
+                    // sudah di dashboard
+                  }
+
+                  if (i == 1) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const CheckInPage(isCheckOut: false),
+                      ),
+                    );
+                  }
+
+                  if (i == 2) {
+                    Navigator.pushNamed(context, '/history');
+                  }
+
+                  if (i == 3) {
+                    Navigator.pushNamed(context, '/profile');
+                  }
                 },
                 child: Column(
                   mainAxisSize: MainAxisSize.min,

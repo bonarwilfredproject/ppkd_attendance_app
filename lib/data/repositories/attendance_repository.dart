@@ -20,6 +20,18 @@ class AttendanceRepository {
     });
   }
 
+  Future<Map<String, dynamic>> deleteAbsen({
+    required int id,
+    required String name,
+    required String email,
+    required String password,
+  }) async {
+    return await ApiService.delete(
+      "/absen/$id",
+      body: {"name": name, "email": email, "password": password},
+    );
+  }
+
   Future<Map<String, dynamic>> getStats() async {
     return await ApiService.get("/absen/stats");
   }
@@ -52,9 +64,5 @@ class AttendanceRepository {
 
   Future<Map<String, dynamic>> getHistory() async {
     return await ApiService.get("/absen/history");
-  }
-
-  Future<Map<String, dynamic>> deleteAbsen(int id) async {
-    return await ApiService.delete("/absen/$id");
   }
 }

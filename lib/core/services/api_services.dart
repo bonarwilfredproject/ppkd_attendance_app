@@ -59,14 +59,27 @@ class ApiService {
     return jsonDecode(res.body);
   }
 
-  static Future<Map<String, dynamic>> delete(String endpoint) async {
+  static Future<Map<String, dynamic>> delete(
+    String endpoint, {
+    Map<String, dynamic>? body,
+  }) async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
 
     final res = await http.delete(
       Uri.parse("$baseUrl$endpoint"),
-      headers: {"Authorization": "Bearer $token", "Accept": "application/json"},
+      headers: {
+        "Authorization": "Bearer $token",
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+      },
+      body: body != null ? jsonEncode(body) : null,
     );
+
+    print("DELETE URL: $baseUrl$endpoint");
+    print("BODY: $body");
+    print("STATUS: ${res.statusCode}");
+    print("RES: ${res.body}");
 
     return jsonDecode(res.body);
   }

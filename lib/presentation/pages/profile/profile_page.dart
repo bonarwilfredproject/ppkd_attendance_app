@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:ppkd_attendance_app/core/services/auth_services.dart';
 import 'package:ppkd_attendance_app/data/repositories/auth_repository.dart';
+import 'package:ppkd_attendance_app/presentation/pages/check_in/check_in_page.dart';
+import 'package:ppkd_attendance_app/presentation/pages/profile/change_password_page.dart';
 import 'edit_profile_page.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -17,7 +19,9 @@ class _ProfilePageState extends State<ProfilePage> {
   String name = '';
   String phone = '';
   bool isLoading = false;
+  String email = '';
   int _selectedIndex = 3; // karena profile tab
+  String? profilePhotoUrl;
   Widget _buildBottomNav() {
     final items = [
       {'icon': Icons.home_outlined, 'label': 'Home'},
@@ -42,6 +46,14 @@ class _ProfilePageState extends State<ProfilePage> {
 
                   if (i == 0) {
                     Navigator.pushReplacementNamed(context, '/dashboard');
+                  }
+                  if (i == 1) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const CheckInPage(isCheckOut: false),
+                      ),
+                    );
                   }
                   if (i == 2) {
                     Navigator.pushReplacementNamed(context, '/history');
@@ -98,9 +110,12 @@ class _ProfilePageState extends State<ProfilePage> {
       setState(() {
         name = data['name']?.toString() ?? '';
         phone = data['phone']?.toString() ?? data['no_hp']?.toString() ?? '';
-
+        email = data['email']?.toString().trim() ?? '';
         batch = data['batch_ke']?.toString() ?? '';
         trainingTitle = data['training_title']?.toString() ?? '';
+
+        // 🔥 TAMBAH INI
+        profilePhotoUrl = data['profile_photo_url'];
       });
     } catch (e) {
       if (mounted) {
@@ -172,15 +187,23 @@ class _ProfilePageState extends State<ProfilePage> {
                           shape: BoxShape.circle,
                         ),
                         child: ClipOval(
-                          child: Image.asset(
-                            'assets/images/avatar_student.png',
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => const Icon(
-                              Icons.person,
-                              size: 60,
-                              color: Color(0xFF2D3250),
-                            ),
-                          ),
+                          child:
+                              profilePhotoUrl != null &&
+                                  profilePhotoUrl!.isNotEmpty
+                              ? Image.network(
+                                  profilePhotoUrl!,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => const Icon(
+                                    Icons.person,
+                                    size: 60,
+                                    color: Color(0xFF2D3250),
+                                  ),
+                                )
+                              : const Icon(
+                                  Icons.person,
+                                  size: 60,
+                                  color: Color(0xFF2D3250),
+                                ),
                         ),
                       ),
 
@@ -266,12 +289,51 @@ class _ProfilePageState extends State<ProfilePage> {
                                 icon: Icons.lock_outline,
                                 iconColor: const Color(0xFF5B8DEF),
                                 title: 'Ubah Kata Sandi',
-                                onTap: () {
-                                  Navigator.pushNamed(
-                                    context,
-                                    '/change-password',
-                                  );
-                                },
+                                onTap: email.isEmpty
+                                    ? () {
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                              'Tunggu data profile selesai dimuat',
+                                            ),
+                                          ),
+                                        );
+                                      }
+                                    : () async {
+                                        setState(() => isLoading = true);
+
+                                        final res = await repo.forgotPassword(
+                                          email,
+                                        );
+
+                                        setState(() => isLoading = false);
+
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              res['message'] ??
+                                                  'Terjadi kesalahan',
+                                            ),
+                                          ),
+                                        );
+
+                                        if (res['message'] ==
+                                            "OTP berhasil dikirim ke email") {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (_) =>
+                                                  ChangePasswordPage(
+                                                    email: email,
+                                                  ),
+                                            ),
+                                          );
+                                        }
+                                      },
                               ),
                               _buildDivider(),
                               _buildMenuItem(

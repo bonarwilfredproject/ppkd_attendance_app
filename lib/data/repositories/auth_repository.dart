@@ -8,8 +8,30 @@ class AuthRepository {
     });
   }
 
+  Future<Map<String, dynamic>> resetPassword(
+    String email,
+    String otp,
+    String password,
+  ) async {
+    return await ApiService.post("/reset-password", {
+      "email": email,
+      "otp": otp,
+      "password": password,
+    });
+  }
+
+  Future<Map<String, dynamic>> forgotPassword(String email) async {
+    return await ApiService.post("/forgot-password", {"email": email});
+  }
+
   Future<Map<String, dynamic>> getBatches() async {
     return await ApiService.get("/batches");
+  }
+
+  Future<Map<String, dynamic>> updatePhoto(String base64Image) async {
+    return await ApiService.put("/profile/photo", {
+      "profile_photo": base64Image,
+    });
   }
 
   Future<Map<String, dynamic>> register(

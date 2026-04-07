@@ -32,16 +32,34 @@ class _CheckInPageState extends State<CheckInPage> {
   StreamSubscription<Position>? positionStream;
   Timer? _clockTimer;
   String _liveTime = DateFormat('hh:mm a').format(DateTime.now());
-
+  String? todayStatus;
   final AttendanceRepository repo = AttendanceRepository();
+  bool get isCheckedIn => checkInStatus != null;
+  bool get isCheckedOut => checkOutStatus != null;
+  bool isStatusLoading = true;
+  late DraggableScrollableController sheetController;
+  double sheetSize = 0.45;
 
   // ── init ─────────────────────────────────────────────────
   @override
   void initState() {
     super.initState();
+
+    sheetController = DraggableScrollableController();
+
+    sheetController.addListener(() {
+      setState(() {
+        sheetSize = sheetController.size;
+      });
+    });
+
     _startClock();
     _initLocation();
-    _loadStatus();
+
+    Future.microtask(() async {
+      await _loadStatus();
+      setState(() {});
+    });
   }
 
   void _startClock() {
@@ -54,15 +72,26 @@ class _CheckInPageState extends State<CheckInPage> {
     try {
       final res = await repo.getTodayAttendance();
 
-      print("TODAY RESPONSE: $res");
-
       setState(() {
         checkInStatus = res['data']?['check_in_time'];
-        checkOutStatus = res['data']?['check_out_time']; // 🔥 TAMBAHIN
+        checkOutStatus = res['data']?['check_out_time'];
+        todayStatus = res['data']?['status'];
+        isStatusLoading = false; // 🔥 selesai load
       });
     } catch (e) {
       print("ERROR LOAD STATUS: $e");
+      setState(() => isStatusLoading = false);
     }
+  }
+
+  bool get isCheckOutMode {
+    if (todayStatus == 'izin') return false;
+
+    if (checkInStatus != null && checkOutStatus == null) {
+      return true; // 🔥 sudah check-in → harus check-out
+    }
+
+    return false; // default → check-in
   }
 
   Future<void> _initLocation() async {
@@ -113,21 +142,17 @@ class _CheckInPageState extends State<CheckInPage> {
   }
 
   String _buildStatusText() {
-    // ── CHECK IN PAGE ──
-    if (!widget.isCheckOut) {
-      if (checkInStatus == null) {
-        return 'Belum Check in';
-      } else {
-        return 'Sudah Check in';
-      }
+    if (todayStatus == 'izin') return 'Sedang Izin';
+
+    if (checkInStatus == null) {
+      return 'Belum Check in';
     }
 
-    // ── CHECK OUT PAGE ──
     if (checkOutStatus == null) {
-      return 'Belum Check out';
-    } else {
-      return 'Sudah Check out';
+      return 'Sudah Check in (belum pulang)';
     }
+
+    return 'Sudah Check out';
   }
 
   // ── action ────────────────────────────────────────────────
@@ -145,7 +170,7 @@ class _CheckInPageState extends State<CheckInPage> {
       final addr = "${place.street}, ${place.locality}, ${place.country}";
 
       dynamic res;
-      if (widget.isCheckOut) {
+      if (isCheckOutMode) {
         res = await repo.checkOut(pos.latitude, pos.longitude, addr);
       } else {
         res = await repo.checkIn(pos.latitude, pos.longitude, addr);
@@ -176,7 +201,13 @@ class _CheckInPageState extends State<CheckInPage> {
   // ── build ─────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
-    final label = widget.isCheckOut ? 'Check out' : 'Check in';
+    final label = isStatusLoading
+        ? 'Loading...'
+        : isCheckedOut
+        ? 'Selesai'
+        : isCheckOutMode
+        ? 'Check out'
+        : 'Check in';
 
     return Scaffold(
       backgroundColor: const Color(0xFFD4E600),
@@ -212,64 +243,61 @@ class _CheckInPageState extends State<CheckInPage> {
 
           // ── live clock overlay (top center) ──
           SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              child: Row(
-                children: [
-                  // back button
-                  Padding(
-                    padding: const EdgeInsets.only(left: 8),
-                    child: CircleAvatar(
-                      backgroundColor: Colors.white,
-                      radius: 20,
-                      child: IconButton(
-                        icon: const Icon(
-                          Icons.arrow_back,
-                          color: Colors.black87,
-                          size: 20,
-                        ),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    child: Center(
-                      child: Text(
-                        _liveTime,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          shadows: [
-                            Shadow(color: Colors.black45, blurRadius: 4),
-                          ],
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 100),
+              transform: Matrix4.translationValues(
+                0,
+                -(sheetSize - 0.35) * 50, // ✅ lebih natural
+                0,
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: Row(
+                  children: [
+                    // back button
+                    Padding(
+                      padding: const EdgeInsets.only(left: 8),
+                      child: CircleAvatar(
+                        backgroundColor: Colors.white,
+                        radius: 20,
+                        child: IconButton(
+                          icon: const Icon(
+                            Icons.arrow_back,
+                            color: Colors.black87,
+                            size: 20,
+                          ),
+                          onPressed: () => Navigator.pop(context),
                         ),
                       ),
                     ),
-                  ),
-                  // refresh button
-                  Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: CircleAvatar(
-                      backgroundColor: Colors.white,
-                      radius: 20,
-                      child: IconButton(
-                        icon: const Icon(
-                          Icons.refresh,
-                          color: Colors.black87,
-                          size: 20,
+
+                    const Spacer(),
+
+                    // refresh button
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: CircleAvatar(
+                        backgroundColor: Colors.white,
+                        radius: 20,
+                        child: IconButton(
+                          icon: const Icon(
+                            Icons.refresh,
+                            color: Colors.black87,
+                            size: 20,
+                          ),
+                          onPressed: _initLocation,
                         ),
-                        onPressed: _initLocation,
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
 
           // ── bottom sheet ──
           DraggableScrollableSheet(
+            controller: sheetController,
             initialChildSize: 0.45,
             minChildSize: 0.35,
             maxChildSize: 0.7,
@@ -286,20 +314,43 @@ class _CheckInPageState extends State<CheckInPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // drag handle
+                        Column(
+                          children: [
+                            // 🔥 HEADER (BACK - TIME - REFRESH)
+                            Center(
+                              child: Column(
+                                children: [
+                                  const SizedBox(height: 8),
+
+                                  // drag handle
+                                  Container(
+                                    margin: const EdgeInsets.only(bottom: 12),
+                                    width: 40,
+                                    height: 4,
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey[300],
+                                      borderRadius: BorderRadius.circular(2),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        // title
                         Center(
-                          child: Container(
-                            margin: const EdgeInsets.symmetric(vertical: 12),
-                            width: 40,
-                            height: 4,
-                            decoration: BoxDecoration(
-                              color: Colors.grey[300],
-                              borderRadius: BorderRadius.circular(2),
+                          child: Text(
+                            _liveTime,
+                            style: const TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
                             ),
                           ),
                         ),
 
-                        // title
+                        const SizedBox(height: 6),
                         Center(
                           child: Text(
                             label,
@@ -413,9 +464,20 @@ class _CheckInPageState extends State<CheckInPage> {
                           width: double.infinity,
                           height: 52,
                           child: ElevatedButton(
-                            onPressed: isSubmitting ? null : _handleSubmit,
+                            onPressed:
+                                (isSubmitting ||
+                                    isCheckedOut ||
+                                    todayStatus == 'izin')
+                                ? null
+                                : _handleSubmit,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF5B7BFF),
+                              backgroundColor: todayStatus == 'izin'
+                                  ? Colors.grey
+                                  : isCheckedOut
+                                  ? Colors.grey
+                                  : isCheckedIn
+                                  ? Colors.orange
+                                  : const Color(0xFF5B7BFF),
                               disabledBackgroundColor: const Color(
                                 0xFF5B7BFF,
                               ).withOpacity(0.6),
@@ -434,7 +496,13 @@ class _CheckInPageState extends State<CheckInPage> {
                                     ),
                                   )
                                 : Text(
-                                    label,
+                                    todayStatus == 'izin'
+                                        ? 'Sedang Izin'
+                                        : isCheckedOut
+                                        ? 'Sudah Check Out'
+                                        : isCheckedIn
+                                        ? 'Check Out'
+                                        : 'Check In',
                                     style: const TextStyle(
                                       color: Colors.white,
                                       fontSize: 16,
@@ -466,6 +534,8 @@ class _CheckInPageState extends State<CheckInPage> {
       {'icon': Icons.person_outline, 'label': 'Profile'},
     ];
 
+    final int selectedIndex = 1; // 🔥 Map aktif (CheckInPage)
+
     return Container(
       decoration: const BoxDecoration(color: Color(0xFFD4E600)),
       child: SafeArea(
@@ -475,12 +545,19 @@ class _CheckInPageState extends State<CheckInPage> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: List.generate(items.length, (i) {
+              final selected = selectedIndex == i;
+
               return GestureDetector(
                 onTap: () {
-                  if (i == 0)
+                  if (i == 0) {
                     Navigator.pushReplacementNamed(context, '/dashboard');
-                  if (i == 2) Navigator.pushNamed(context, '/history');
-                  if (i == 3) Navigator.pushNamed(context, '/profile');
+                  }
+                  if (i == 2) {
+                    Navigator.pushNamed(context, '/history');
+                  }
+                  if (i == 3) {
+                    Navigator.pushNamed(context, '/profile');
+                  }
                 },
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -499,6 +576,18 @@ class _CheckInPageState extends State<CheckInPage> {
                         fontWeight: FontWeight.w500,
                       ),
                     ),
+
+                    // 🔥 GARIS BAWAH AKTIF (INI YANG KURANG TADI)
+                    if (selected)
+                      Container(
+                        margin: const EdgeInsets.only(top: 4),
+                        width: 20,
+                        height: 2,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF5B7BFF),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
                   ],
                 ),
               );

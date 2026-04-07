@@ -1,4 +1,8 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:ppkd_attendance_app/data/repositories/auth_repository.dart';
 
 class EditProfilePage extends StatefulWidget {
@@ -14,7 +18,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
   final TextEditingController nameController = TextEditingController();
   final TextEditingController phoneController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
-
+  File? selectedImage;
+  String? profilePhotoUrl;
+  final ImagePicker picker = ImagePicker();
   bool isLoading = false;
 
   Future<void> loadProfile() async {
@@ -27,6 +33,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
       nameController.text = data['name'] ?? '';
       phoneController.text = data['phone'] ?? data['no_hp'] ?? '';
       emailController.text = data['email'] ?? '';
+      profilePhotoUrl =
+          data['profile_photo_url'] ??
+          (data['profile_photo'] != null
+              ? "https://appabsensi.mobileprojp.com/public/${data['profile_photo']}"
+              : null);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(
@@ -36,6 +47,83 @@ class _EditProfilePageState extends State<EditProfilePage> {
     }
 
     setState(() => isLoading = false);
+  }
+
+  Future<void> pickImage(ImageSource source) async {
+    final XFile? image = await picker.pickImage(
+      source: source,
+      imageQuality: 70,
+    );
+
+    if (image == null) return;
+
+    setState(() {
+      selectedImage = File(image.path);
+    });
+
+    await uploadImage();
+  }
+
+  Future<void> uploadImage() async {
+    if (selectedImage == null) return;
+
+    setState(() => isLoading = true);
+
+    try {
+      final bytes = await selectedImage!.readAsBytes();
+      String base64Image = base64Encode(bytes);
+
+      // IMPORTANT: format sesuai API
+      base64Image = "data:image/png;base64,$base64Image";
+
+      final res = await repo.updatePhoto(base64Image);
+
+      if (mounted) {
+        setState(() {
+          profilePhotoUrl = res['data']['profile_photo'];
+        });
+
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(res['message'])));
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Upload foto gagal')));
+    }
+
+    setState(() => isLoading = false);
+  }
+
+  void showImagePicker() {
+    showModalBottomSheet(
+      context: context,
+      builder: (_) {
+        return SafeArea(
+          child: Wrap(
+            children: [
+              ListTile(
+                leading: const Icon(Icons.camera_alt),
+                title: const Text("Kamera"),
+                onTap: () {
+                  Navigator.pop(context);
+                  pickImage(ImageSource.camera);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo),
+                title: const Text("Galeri"),
+                onTap: () {
+                  Navigator.pop(context);
+                  pickImage(ImageSource.gallery);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   Future<void> handleUpdate() async {
@@ -124,22 +212,29 @@ class _EditProfilePageState extends State<EditProfilePage> {
                       const SizedBox(height: 8),
 
                       // Avatar
-                      Container(
-                        width: 100,
-                        height: 100,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFF5C518),
-                          shape: BoxShape.circle,
-                        ),
-                        child: ClipOval(
-                          child: Image.asset(
-                            'assets/images/avatar_student.png',
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => const Icon(
-                              Icons.person,
-                              size: 60,
-                              color: Color(0xFF2D3250),
-                            ),
+                      GestureDetector(
+                        onTap: showImagePicker,
+                        child: Container(
+                          width: 100,
+                          height: 100,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFF5C518),
+                            shape: BoxShape.circle,
+                          ),
+                          child: ClipOval(
+                            child: selectedImage != null
+                                ? Image.file(selectedImage!, fit: BoxFit.cover)
+                                : (profilePhotoUrl != null &&
+                                      profilePhotoUrl!.isNotEmpty)
+                                ? Image.network(
+                                    profilePhotoUrl!,
+                                    fit: BoxFit.cover,
+                                  )
+                                : const Icon(
+                                    Icons.person,
+                                    size: 60,
+                                    color: Color(0xFF2D3250),
+                                  ),
                           ),
                         ),
                       ),
@@ -170,15 +265,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
                                 _buildTextField(
                                   controller: nameController,
                                   label: 'Nama',
-                                ),
-
-                                const SizedBox(height: 16),
-
-                                // No HP
-                                _buildTextField(
-                                  controller: phoneController,
-                                  label: 'No HP',
-                                  keyboardType: TextInputType.phone,
                                 ),
 
                                 const SizedBox(height: 16),
