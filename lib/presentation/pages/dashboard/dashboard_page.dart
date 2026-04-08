@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:intl/intl.dart';
+import 'package:ppkd_attendance_app/core/services/auth_services.dart';
 
 import 'package:ppkd_attendance_app/core/services/location_service.dart';
 import 'package:ppkd_attendance_app/data/repositories/attendance_repository.dart';
@@ -41,6 +42,12 @@ class _DashboardPageState extends State<DashboardPage> {
   int totalMasuk = 0;
   int totalIzin = 0;
   bool sudahAbsenHariIni = false;
+
+  // ── stats filter ─────────────────────────────────────────
+  int _statsFilter = 0; // 0 = Bulan Ini, 1 = Tahun Ini, 2 = Custom
+  DateTime? _customStart;
+  DateTime? _customEnd;
+  bool _statsLoading = false;
   String? checkInToday;
   String? checkOutToday;
   bool get isCheckedIn => checkInToday != null;
@@ -95,8 +102,33 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Future<void> loadStats() async {
+    setState(() => _statsLoading = true);
     try {
-      final res = await repo.getStats(); // bikin di repository
+      String? start;
+      String? end;
+      final now = DateTime.now();
+
+      if (_statsFilter == 0) {
+        // Bulan Ini
+        start = DateFormat(
+          'yyyy-MM-dd',
+        ).format(DateTime(now.year, now.month, 1));
+        end = DateFormat(
+          'yyyy-MM-dd',
+        ).format(DateTime(now.year, now.month + 1, 0));
+      } else if (_statsFilter == 1) {
+        // Tahun Ini
+        start = '${now.year}-01-01';
+        end = '${now.year}-12-31';
+      } else if (_statsFilter == 2 &&
+          _customStart != null &&
+          _customEnd != null) {
+        // Custom
+        start = DateFormat('yyyy-MM-dd').format(_customStart!);
+        end = DateFormat('yyyy-MM-dd').format(_customEnd!);
+      }
+
+      final res = await repo.getStats(start: start, end: end);
       final data = res['data'];
 
       setState(() {
@@ -107,6 +139,8 @@ class _DashboardPageState extends State<DashboardPage> {
       });
     } catch (e) {
       debugPrint('Error loadStats: $e');
+    } finally {
+      if (mounted) setState(() => _statsLoading = false);
     }
   }
 
@@ -192,6 +226,110 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
+  Future<void> handleLogout() async {
+    await AuthService.logout();
+    if (mounted) {
+      Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+    }
+  }
+
+  Future<void> showLogoutDialog() async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardColor, // 🔥 ikut theme
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.logout,
+                  size: 50,
+                  color: Theme.of(context).colorScheme.onSurface, // 🔥 dinamis
+                ),
+                const SizedBox(height: 16),
+
+                Text(
+                  "Keluar dari akun?",
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+
+                const SizedBox(height: 8),
+
+                Text(
+                  "Kamu harus login kembali untuk mengakses aplikasi.",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: isDark ? Colors.grey.shade400 : Colors.grey,
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: Color(0xFF5B8DEF)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          "Batal",
+                          style: TextStyle(color: Color(0xFF5B8DEF)),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(width: 12),
+
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          Navigator.pop(context);
+                          await handleLogout();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          "Keluar",
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> loadAttendance() async {
     final res = await repo.getHistory();
     final data = res['data'] as List;
@@ -223,16 +361,27 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Future<void> getLocation() async {
+    if (!mounted) return;
     setState(() => isLoading = true);
     try {
       final pos = await LocationService.getCurrentLocation();
-      setState(() => currentLatLng = LatLng(pos.latitude, pos.longitude));
+      if (mounted) {
+        setState(() => currentLatLng = LatLng(pos.latitude, pos.longitude));
+      }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(e.toString())));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lokasi tidak dapat diakses: $e'),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => isLoading = false);
+      }
     }
-    setState(() => isLoading = false);
   }
 
   // ── helpers ───────────────────────────────────────────────
@@ -260,7 +409,7 @@ class _DashboardPageState extends State<DashboardPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
         children: [
           Column(
@@ -269,7 +418,11 @@ class _DashboardPageState extends State<DashboardPage> {
               Expanded(
                 child: SingleChildScrollView(
                   child: Column(
-                    children: [_buildAttendanceCard(), _buildHistorySection()],
+                    children: [
+                      _buildAttendanceCard(),
+                      _buildStatsSection(),
+                      _buildHistorySection(),
+                    ],
                   ),
                 ),
               ),
@@ -288,14 +441,17 @@ class _DashboardPageState extends State<DashboardPage> {
 
   // ── header ────────────────────────────────────────────────
   Widget _buildHeader() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [Color(0xFF5B7BFF), Color(0xFF7FA1FF)],
+          colors: isDark
+              ? [const Color(0xFF1A237E), const Color(0xFF283593)]
+              : [const Color(0xFF5B7BFF), const Color(0xFF7FA1FF)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.only(
+        borderRadius: const BorderRadius.only(
           bottomLeft: Radius.circular(28),
           bottomRight: Radius.circular(28),
         ),
@@ -388,9 +544,7 @@ class _DashboardPageState extends State<DashboardPage> {
                 ),
                 child: IconButton(
                   icon: const Icon(Icons.logout, color: Colors.white),
-                  onPressed: () {
-                    Navigator.pushReplacementNamed(context, '/login');
-                  },
+                  onPressed: showLogoutDialog,
                 ),
               ),
             ],
@@ -402,15 +556,16 @@ class _DashboardPageState extends State<DashboardPage> {
 
   // ── attendance card ───────────────────────────────────────
   Widget _buildAttendanceCard() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 36, 16, 0),
       transform: Matrix4.translationValues(0, -16, 0),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: Colors.black.withOpacity(isDark ? 0.3 : 0.08),
             blurRadius: 16,
             offset: const Offset(0, 4),
           ),
@@ -423,12 +578,12 @@ class _DashboardPageState extends State<DashboardPage> {
             padding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
             child: Column(
               children: [
-                const Text(
+                Text(
                   'Live Attendance',
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
-                    color: Colors.black87,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -444,30 +599,36 @@ class _DashboardPageState extends State<DashboardPage> {
                 const SizedBox(height: 4),
                 Text(
                   _liveDate,
-                  style: const TextStyle(fontSize: 13, color: Colors.grey),
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: isDark ? Colors.grey.shade400 : Colors.grey,
+                  ),
                 ),
               ],
             ),
           ),
 
-          const Divider(height: 1, color: Color(0xFFEEEEEE)),
+          Divider(height: 1, color: Theme.of(context).dividerColor),
 
           // Office hours
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 20),
             child: Column(
-              children: const [
+              children: [
                 Text(
                   'Office Hours',
-                  style: TextStyle(fontSize: 13, color: Colors.grey),
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: isDark ? Colors.grey.shade400 : Colors.grey,
+                  ),
                 ),
-                SizedBox(height: 6),
+                const SizedBox(height: 6),
                 Text(
                   '08:00 AM -  05:00 PM',
                   style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
               ],
@@ -475,27 +636,64 @@ class _DashboardPageState extends State<DashboardPage> {
           ),
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 12),
-            child: Column(
-              children: [
-                Text(
-                  sudahAbsenHariIni
-                      ? 'Sudah absen hari ini'
-                      : 'Belum absen hari ini',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: sudahAbsenHariIni ? Colors.green : Colors.red,
+            child: Builder(
+              builder: (_) {
+                // Tentukan teks, ikon, dan warna berdasarkan status
+                String statusText;
+                IconData statusIcon;
+                Color iconColor;
+                Color textColor;
+                Color bgColor;
+
+                if (todayStatus == 'izin') {
+                  statusText = 'Izin hari ini';
+                  statusIcon = Icons.event_busy;
+                  iconColor = Colors.orange;
+                  textColor = Colors.orange.shade800;
+                  bgColor = const Color(0xFFFFF3E0);
+                } else if (sudahAbsenHariIni || isCheckedIn) {
+                  statusText = 'Sudah absen hari ini';
+                  statusIcon = Icons.check_circle;
+                  iconColor = Colors.green;
+                  textColor = Colors.green.shade700;
+                  bgColor = const Color(0xFFE8F5E9);
+                } else {
+                  statusText = 'Belum absen hari ini';
+                  statusIcon = Icons.cancel;
+                  iconColor = Colors.red;
+                  textColor = Colors.red.shade700;
+                  bgColor = const Color(0xFFFFEBEE);
+                }
+
+                return Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
                   ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'Total Absen: $totalAbsen',
-                  style: const TextStyle(fontSize: 13),
-                ),
-              ],
+                  decoration: BoxDecoration(
+                    color: bgColor,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(statusIcon, size: 18, color: iconColor),
+                      const SizedBox(width: 8),
+                      Text(
+                        statusText,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: textColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
           ),
-          if (checkInToday != null)
+          if (todayStatus != 'izin' && checkInToday != null)
             Padding(
               padding: const EdgeInsets.only(bottom: 10),
               child: Text(
@@ -575,6 +773,7 @@ class _DashboardPageState extends State<DashboardPage> {
                   if (result == true) {
                     loadToday();
                     loadStats();
+                    loadAttendance(); // refresh history juga
                   }
                 },
                 icon: const Icon(Icons.event_busy),
@@ -595,16 +794,281 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  // ── history section ───────────────────────────────────────
-  Widget _buildHistorySection() {
+  // ── stats section (NEW) ────────────────────────────────────
+  Widget _buildStatsSection() {
+    final filterLabels = ['Bulan Ini', 'Tahun Ini', 'Custom'];
+
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+      margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
+            color: Colors.black.withOpacity(isDark ? 0.3 : 0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Title
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.bar_chart_rounded,
+                  color: Theme.of(context).colorScheme.primary,
+                  size: 24,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Statistik Absensi',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 14),
+
+          // ── Filter chips
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Container(
+              decoration: BoxDecoration(
+                color: isDark
+                    ? const Color(0xFF2A2A2A)
+                    : const Color(0xFFF0F2F5),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: const EdgeInsets.all(4),
+              child: Row(
+                children: List.generate(filterLabels.length, (i) {
+                  final selected = _statsFilter == i;
+                  return Expanded(
+                    child: GestureDetector(
+                      onTap: () async {
+                        if (i == 2) {
+                          // Custom date picker
+                          final picked = await showDateRangePicker(
+                            context: context,
+                            firstDate: DateTime(2020),
+                            lastDate: DateTime.now(),
+                            initialDateRange:
+                                _customStart != null && _customEnd != null
+                                ? DateTimeRange(
+                                    start: _customStart!,
+                                    end: _customEnd!,
+                                  )
+                                : DateTimeRange(
+                                    start: DateTime.now().subtract(
+                                      const Duration(days: 30),
+                                    ),
+                                    end: DateTime.now(),
+                                  ),
+                            builder: (context, child) {
+                              return Theme(
+                                data: Theme.of(context),
+                                child: child!,
+                              );
+                            },
+                          );
+                          if (picked != null) {
+                            setState(() {
+                              _statsFilter = 2;
+                              _customStart = picked.start;
+                              _customEnd = picked.end;
+                            });
+                            loadStats();
+                          }
+                        } else {
+                          setState(() => _statsFilter = i);
+                          loadStats();
+                        }
+                      },
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        decoration: BoxDecoration(
+                          color: selected
+                              ? const Color(0xFF5B7BFF)
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(10),
+                          boxShadow: selected
+                              ? [
+                                  BoxShadow(
+                                    color: const Color(
+                                      0xFF5B7BFF,
+                                    ).withOpacity(0.3),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ]
+                              : [],
+                        ),
+                        child: Center(
+                          child: Text(
+                            filterLabels[i],
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: selected
+                                  ? Colors.white
+                                  : (isDark
+                                        ? Colors.grey.shade300
+                                        : Colors.grey.shade600),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+              ),
+            ),
+          ),
+
+          // ── Custom date label
+          if (_statsFilter == 2 && _customStart != null && _customEnd != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
+              child: Center(
+                child: Text(
+                  '${DateFormat('dd MMM yyyy').format(_customStart!)}  —  ${DateFormat('dd MMM yyyy').format(_customEnd!)}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey.shade500,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ),
+
+          const SizedBox(height: 16),
+
+          // ── Stat cards
+          _statsLoading
+              ? const Padding(
+                  padding: EdgeInsets.all(30),
+                  child: Center(
+                    child: SizedBox(
+                      width: 28,
+                      height: 28,
+                      child: CircularProgressIndicator(strokeWidth: 2.5),
+                    ),
+                  ),
+                )
+              : Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                  child: Row(
+                    children: [
+                      _buildStatCard(
+                        icon: Icons.event_available_rounded,
+                        label: 'Total Absen',
+                        value: totalAbsen.toString(),
+                        gradient: const [Color(0xFF5B7BFF), Color(0xFF7FA1FF)],
+                      ),
+                      const SizedBox(width: 10),
+                      _buildStatCard(
+                        icon: Icons.check_circle_outline_rounded,
+                        label: 'Hadir',
+                        value: totalMasuk.toString(),
+                        gradient: const [Color(0xFF43A047), Color(0xFF66BB6A)],
+                      ),
+                      const SizedBox(width: 10),
+                      _buildStatCard(
+                        icon: Icons.event_busy_rounded,
+                        label: 'Izin',
+                        value: totalIzin.toString(),
+                        gradient: const [Color(0xFFFF8F00), Color(0xFFFFB74D)],
+                      ),
+                    ],
+                  ),
+                ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatCard({
+    required IconData icon,
+    required String label,
+    required String value,
+    required List<Color> gradient,
+  }) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 8),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: gradient,
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: gradient[0].withOpacity(0.3),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: Colors.white, size: 22),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              value,
+              style: const TextStyle(
+                fontSize: 26,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                color: Colors.white.withOpacity(0.9),
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── history section ───────────────────────────────────────
+  Widget _buildHistorySection() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDark ? 0.3 : 0.06),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -617,15 +1081,19 @@ class _DashboardPageState extends State<DashboardPage> {
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
             child: Row(
-              children: const [
-                Icon(Icons.history, color: Colors.black87, size: 22),
-                SizedBox(width: 8),
+              children: [
+                Icon(
+                  Icons.history,
+                  color: Theme.of(context).colorScheme.onSurface,
+                  size: 22,
+                ),
+                const SizedBox(width: 8),
                 Text(
                   'Attendance History',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
               ],
@@ -644,7 +1112,7 @@ class _DashboardPageState extends State<DashboardPage> {
               physics: const NeverScrollableScrollPhysics(),
               itemCount: historyData.length,
               separatorBuilder: (_, __) =>
-                  const Divider(height: 1, color: Color(0xFFEEEEEE)),
+                  Divider(height: 1, color: Theme.of(context).dividerColor),
               itemBuilder: (context, index) {
                 final item = historyData[index];
                 final dateStr = item['attendance_date'] ?? item['date'] ?? '';
@@ -665,9 +1133,9 @@ class _DashboardPageState extends State<DashboardPage> {
                           children: [
                             Text(
                               _formatHistoryDate(dateStr),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 14,
-                                color: Colors.black87,
+                                color: Theme.of(context).colorScheme.onSurface,
                               ),
                             ),
                             const SizedBox(height: 4),
@@ -701,9 +1169,10 @@ class _DashboardPageState extends State<DashboardPage> {
       {'icon': Icons.person_outline, 'label': 'Profile'},
     ];
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFFD4E600),
+        color: isDark ? const Color(0xFF1E1E1E) : const Color(0xFFD4E600),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.1),

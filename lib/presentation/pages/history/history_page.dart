@@ -72,6 +72,7 @@ class _HistoryPageState extends State<HistoryPage> {
       builder: (_) {
         bool isObscure = true;
 
+        final isDark = Theme.of(context).brightness == Brightness.dark;
         return StatefulBuilder(
           builder: (context, setStateDialog) {
             return Dialog(
@@ -103,20 +104,45 @@ class _HistoryPageState extends State<HistoryPage> {
                     TextField(
                       controller: passwordController,
                       obscureText: isObscure,
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
                       decoration: InputDecoration(
-                        hintText: "Masukkan password",
-                        filled: true,
-                        fillColor: const Color(0xFFF5F5F5),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 12,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
+                        labelText: "Password",
+                        labelStyle: TextStyle(
+                          color: isDark
+                              ? Colors.grey.shade400
+                              : Colors.grey.shade500,
+                          fontSize: 13,
                         ),
 
-                        // 👁️ ICON TOGGLE
+                        filled: true,
+                        fillColor: isDark
+                            ? const Color(0xFF2A2A2A)
+                            : Colors.white,
+
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
+                        ),
+
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide(
+                            color: isDark
+                                ? Colors.grey.shade700
+                                : Colors.grey.shade300,
+                          ),
+                        ),
+
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(
+                            color: Color(0xFF5B8DEF),
+                          ),
+                        ),
+
                         suffixIcon: IconButton(
                           icon: Icon(
                             isObscure ? Icons.visibility_off : Icons.visibility,
@@ -143,9 +169,11 @@ class _HistoryPageState extends State<HistoryPage> {
                                 borderRadius: BorderRadius.circular(12),
                               ),
                             ),
-                            child: const Text(
+                            child: Text(
                               "Batal",
-                              style: TextStyle(color: Colors.black),
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
                             ),
                           ),
                         ),
@@ -194,7 +222,7 @@ class _HistoryPageState extends State<HistoryPage> {
         context,
       ).showSnackBar(SnackBar(content: Text(message)));
 
-      return message == "Data absen berhasil dihapus";
+      return message.toLowerCase().contains("berhasil dihapus");
     } catch (e) {
       ScaffoldMessenger.of(
         context,
@@ -251,7 +279,7 @@ class _HistoryPageState extends State<HistoryPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Column(
         children: [
           _buildHeader(),
@@ -270,8 +298,9 @@ class _HistoryPageState extends State<HistoryPage> {
 
   // ── header ────────────────────────────────────────────────
   Widget _buildHeader() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      color: const Color(0xFF5B7BFF),
+      color: isDark ? const Color(0xFF1A237E) : const Color(0xFF5B7BFF),
       child: SafeArea(
         bottom: false,
         child: Padding(
@@ -307,14 +336,15 @@ class _HistoryPageState extends State<HistoryPage> {
 
   // ── list ──────────────────────────────────────────────────
   Widget _buildList() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       margin: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
+            color: Colors.black.withOpacity(isDark ? 0.3 : 0.06),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -327,15 +357,19 @@ class _HistoryPageState extends State<HistoryPage> {
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
             child: Row(
-              children: const [
-                Icon(Icons.history, color: Colors.black87, size: 22),
-                SizedBox(width: 8),
+              children: [
+                Icon(
+                  Icons.history,
+                  color: Theme.of(context).colorScheme.onSurface,
+                  size: 22,
+                ),
+                const SizedBox(width: 8),
                 Text(
                   'Attendance History',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
               ],
@@ -347,7 +381,7 @@ class _HistoryPageState extends State<HistoryPage> {
             physics: const NeverScrollableScrollPhysics(),
             itemCount: data.length,
             separatorBuilder: (_, __) =>
-                const Divider(height: 1, color: Color(0xFFEEEEEE)),
+                Divider(height: 1, color: Theme.of(context).dividerColor),
             itemBuilder: (context, index) {
               final item = data[index];
               final dateStr = item['attendance_date'] ?? item['date'] ?? '';
@@ -374,6 +408,7 @@ class _HistoryPageState extends State<HistoryPage> {
                   final confirm = await showDialog<bool>(
                     context: context,
                     builder: (_) => Dialog(
+                      backgroundColor: Theme.of(context).cardColor,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(20),
                       ),
@@ -389,22 +424,25 @@ class _HistoryPageState extends State<HistoryPage> {
                             ),
                             const SizedBox(height: 12),
 
-                            const Text(
+                            Text(
                               "Hapus Absen",
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.onSurface,
                               ),
                             ),
 
                             const SizedBox(height: 8),
 
-                            const Text(
+                            Text(
                               "Yakin mau hapus data ini?",
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 14,
-                                color: Colors.black54,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurface.withOpacity(0.6),
                               ),
                             ),
 
@@ -421,9 +459,13 @@ class _HistoryPageState extends State<HistoryPage> {
                                         borderRadius: BorderRadius.circular(12),
                                       ),
                                     ),
-                                    child: const Text(
+                                    child: Text(
                                       "Batal",
-                                      style: TextStyle(color: Colors.black),
+                                      style: TextStyle(
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.onSurface,
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -457,15 +499,13 @@ class _HistoryPageState extends State<HistoryPage> {
                   final success = await handleDeleteAbsen(item['id']);
 
                   if (!success) return false;
-                  setState(() {
-                    data.removeWhere(
-                      (e) => e['id'].toString() == item['id'].toString(),
-                    );
-                  });
-                  // 🔥 refresh dari API (BEST PRACTICE)
-                  await loadHistory();
 
-                  return true;
+                  // Hapus item dari list lokal supaya langsung hilang dari tampilan
+                  setState(() {
+                    data.removeAt(index);
+                  });
+
+                  return false; // return false karena item sudah dihapus dari list via setState
                 },
 
                 child: Padding(
@@ -481,9 +521,9 @@ class _HistoryPageState extends State<HistoryPage> {
                           Expanded(
                             child: Text(
                               _formatDate(dateStr),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 14,
-                                color: Colors.black87,
+                                color: Theme.of(context).colorScheme.onSurface,
                               ),
                             ),
                           ),
@@ -494,7 +534,9 @@ class _HistoryPageState extends State<HistoryPage> {
                                 '$checkIn - $checkOut',
                                 style: TextStyle(
                                   fontSize: 14,
-                                  color: late ? Colors.red : Colors.black87,
+                                  color: late
+                                      ? Colors.red
+                                      : Theme.of(context).colorScheme.onSurface,
                                 ),
                               ),
                               const SizedBox(height: 4),
@@ -575,8 +617,11 @@ class _HistoryPageState extends State<HistoryPage> {
       {'icon': Icons.person_outline, 'label': 'Profile'},
     ];
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      decoration: const BoxDecoration(color: Color(0xFFD4E600)),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E1E1E) : const Color(0xFFD4E600),
+      ),
       child: SafeArea(
         top: false,
         child: Padding(

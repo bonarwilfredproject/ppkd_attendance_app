@@ -32,8 +32,15 @@ class AttendanceRepository {
     );
   }
 
-  Future<Map<String, dynamic>> getStats() async {
-    return await ApiService.get("/absen/stats");
+  Future<Map<String, dynamic>> getStats({String? start, String? end}) async {
+    final Map<String, dynamic> queryParams = {};
+    if (start != null) queryParams['start'] = start;
+    if (end != null) queryParams['end'] = end;
+
+    return await ApiService.get(
+      "/absen/stats",
+      queryParameters: queryParams.isNotEmpty ? queryParams : null,
+    );
   }
 
   Future<Map<String, dynamic>> getTodayAttendance() async {

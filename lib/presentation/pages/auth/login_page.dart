@@ -94,8 +94,9 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: const Color(0xFF3D4560),
+      backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFF3D4560),
       body: Stack(
         children: [
           // Yellow accent blobs (bottom-left corner decoration)
@@ -163,9 +164,9 @@ class _LoginPageState extends State<LoginPage> {
 
                 // Bottom white card
                 Container(
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.only(
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).cardColor,
+                    borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(28),
                       topRight: Radius.circular(28),
                     ),
@@ -179,7 +180,6 @@ class _LoginPageState extends State<LoginPage> {
                       const Text(
                         'Email',
                         style: TextStyle(
-                          color: Color(0xFF4A4A4A),
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
                         ),
@@ -188,33 +188,11 @@ class _LoginPageState extends State<LoginPage> {
                       TextField(
                         controller: emailC,
                         keyboardType: TextInputType.emailAddress,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
-                          color: Color(0xFF222222),
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
-                        decoration: InputDecoration(
-                          filled: true,
-                          fillColor: const Color(0xFFEEEEEE),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            borderSide: BorderSide.none,
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            borderSide: BorderSide.none,
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            borderSide: const BorderSide(
-                              color: Color(0xFF5B7BFF),
-                              width: 1.5,
-                            ),
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 16,
-                          ),
-                        ),
+                        decoration: const InputDecoration(),
                       ),
 
                       const SizedBox(height: 20),
@@ -223,7 +201,6 @@ class _LoginPageState extends State<LoginPage> {
                       const Text(
                         'Password',
                         style: TextStyle(
-                          color: Color(0xFF4A4A4A),
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
                         ),
@@ -232,32 +209,11 @@ class _LoginPageState extends State<LoginPage> {
                       TextField(
                         controller: passC,
                         obscureText: _obscurePassword,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
-                          color: Color(0xFF222222),
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                         decoration: InputDecoration(
-                          filled: true,
-                          fillColor: const Color(0xFFEEEEEE),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            borderSide: BorderSide.none,
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            borderSide: BorderSide.none,
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            borderSide: const BorderSide(
-                              color: Color(0xFF5B7BFF),
-                              width: 1.5,
-                            ),
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 16,
-                          ),
                           suffixIcon: IconButton(
                             icon: Icon(
                               _obscurePassword
@@ -358,7 +314,7 @@ class _LoginPageState extends State<LoginPage> {
                               style: TextStyle(
                                 color: emailC.text.isEmpty
                                     ? Colors.grey
-                                    : const Color(0xFF222222),
+                                    : Theme.of(context).colorScheme.onSurface,
                                 fontSize: 13,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -415,17 +371,17 @@ class _LoginPageState extends State<LoginPage> {
                             Navigator.pushNamed(context, '/register');
                           },
                           child: RichText(
-                            text: const TextSpan(
+                            text: TextSpan(
                               text: "Don't have account? ",
                               style: TextStyle(
-                                color: Color(0xFF888888),
+                                color: isDark ? Colors.grey.shade400 : const Color(0xFF888888),
                                 fontSize: 14,
                               ),
                               children: [
                                 TextSpan(
                                   text: 'Sign Up',
                                   style: TextStyle(
-                                    color: Color(0xFF222222),
+                                    color: Theme.of(context).colorScheme.primary,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),

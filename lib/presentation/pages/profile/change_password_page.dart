@@ -79,6 +79,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
     bool obscure = false,
     VoidCallback? toggle,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return TextField(
       controller: controller,
       focusNode: focusNode,
@@ -88,17 +89,27 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
           FocusScope.of(context).requestFocus(nextFocus);
         }
       },
-      style: const TextStyle(fontSize: 15),
+      style: TextStyle(
+        fontSize: 15,
+        color: Theme.of(context).colorScheme.onSurface,
+      ),
       decoration: InputDecoration(
         labelText: hint,
-        labelStyle: TextStyle(color: Colors.grey.shade500, fontSize: 13),
+        labelStyle: TextStyle(
+          color: isDark ? Colors.grey.shade400 : Colors.grey.shade500,
+          fontSize: 13,
+        ),
+        filled: true,
+        fillColor: isDark ? const Color(0xFF2A2A2A) : Colors.white,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
           vertical: 14,
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(color: Colors.grey.shade300),
+          borderSide: BorderSide(
+            color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+          ),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
@@ -120,8 +131,9 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: const Color(0xFFD4ED26),
+      backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFD4ED26),
       body: Stack(
         children: [
           // ── Background layers (sama seperti EditProfilePage) ──
@@ -129,9 +141,9 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
             children: [
               Container(
                 height: MediaQuery.of(context).size.height * 0.25,
-                color: const Color(0xFF5B8DEF),
+                color: isDark ? const Color(0xFF1A237E) : const Color(0xFF5B8DEF),
               ),
-              Expanded(child: Container(color: const Color(0xFFD4ED26))),
+              Expanded(child: Container(color: isDark ? const Color(0xFF121212) : const Color(0xFFD4ED26))),
             ],
           ),
 
@@ -139,7 +151,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
             clipper: _WaveClipper(),
             child: Container(
               height: MediaQuery.of(context).size.height * 0.55,
-              color: const Color(0xFF2D3250),
+              color: isDark ? const Color(0xFF1E1E1E) : const Color(0xFF2D3250),
             ),
           ),
 
@@ -182,11 +194,11 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                     child: Container(
                       padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: Theme.of(context).cardColor,
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.08),
+                            color: Colors.black.withOpacity(isDark ? 0.3 : 0.08),
                             blurRadius: 20,
                             offset: const Offset(0, 4),
                           ),

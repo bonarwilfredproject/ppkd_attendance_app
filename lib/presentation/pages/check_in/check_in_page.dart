@@ -209,8 +209,9 @@ class _CheckInPageState extends State<CheckInPage> {
         ? 'Check out'
         : 'Check in';
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: const Color(0xFFD4E600),
+      backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFD4E600),
       body: Stack(
         children: [
           // ── full-screen map ──
@@ -303,9 +304,9 @@ class _CheckInPageState extends State<CheckInPage> {
             maxChildSize: 0.7,
             builder: (context, scrollController) {
               return Container(
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).cardColor,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
                 ),
                 child: SingleChildScrollView(
                   controller: scrollController,
@@ -342,10 +343,10 @@ class _CheckInPageState extends State<CheckInPage> {
                         Center(
                           child: Text(
                             _liveTime,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.bold,
-                              color: Colors.black87,
+                              color: Theme.of(context).colorScheme.onSurface,
                             ),
                           ),
                         ),
@@ -354,8 +355,8 @@ class _CheckInPageState extends State<CheckInPage> {
                         Center(
                           child: Text(
                             label,
-                            style: const TextStyle(
-                              color: Color(0xFF5B7BFF),
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.primary,
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                             ),
@@ -367,9 +368,9 @@ class _CheckInPageState extends State<CheckInPage> {
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.location_on,
-                              color: Colors.black87,
+                              color: Theme.of(context).colorScheme.onSurface,
                               size: 22,
                             ),
                             const SizedBox(width: 10),
@@ -377,12 +378,12 @@ class _CheckInPageState extends State<CheckInPage> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text(
+                                  Text(
                                     'Your Location',
                                     style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
-                                      color: Colors.black87,
+                                      color: Theme.of(context).colorScheme.onSurface,
                                     ),
                                   ),
                                   const SizedBox(height: 4),
@@ -396,9 +397,9 @@ class _CheckInPageState extends State<CheckInPage> {
                                         )
                                       : Text(
                                           address,
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontSize: 13,
-                                            color: Colors.black54,
+                                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                                             height: 1.5,
                                           ),
                                         ),
@@ -412,22 +413,27 @@ class _CheckInPageState extends State<CheckInPage> {
                         // note
                         Row(
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.notes,
-                              color: Colors.black54,
+                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                               size: 20,
                             ),
                             const SizedBox(width: 10),
                             Expanded(
                               child: TextField(
                                 controller: noteC,
-                                decoration: const InputDecoration(
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.onSurface,
+                                  fontSize: 14,
+                                ),
+                                decoration: InputDecoration(
                                   hintText: 'Note(Optional)',
                                   hintStyle: TextStyle(
-                                    color: Colors.black38,
+                                    color: Theme.of(context).hintColor,
                                     fontSize: 14,
                                   ),
                                   border: InputBorder.none,
+                                  filled: false,
                                   isDense: true,
                                   contentPadding: EdgeInsets.zero,
                                 ),
@@ -440,19 +446,19 @@ class _CheckInPageState extends State<CheckInPage> {
                         // status
                         Row(
                           children: [
-                            const Text(
+                            Text(
                               'Status : ',
                               style: TextStyle(
                                 fontSize: 14,
-                                color: Colors.black54,
+                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                               ),
                             ),
                             Text(
                               _buildStatusText(),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.black87,
+                                color: Theme.of(context).colorScheme.onSurface,
                               ),
                             ),
                           ],
@@ -478,9 +484,7 @@ class _CheckInPageState extends State<CheckInPage> {
                                   : isCheckedIn
                                   ? Colors.orange
                                   : const Color(0xFF5B7BFF),
-                              disabledBackgroundColor: const Color(
-                                0xFF5B7BFF,
-                              ).withOpacity(0.6),
+                              disabledBackgroundColor: Colors.grey.shade700,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(14),
                               ),
@@ -536,8 +540,9 @@ class _CheckInPageState extends State<CheckInPage> {
 
     final int selectedIndex = 1; // 🔥 Map aktif (CheckInPage)
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      decoration: const BoxDecoration(color: Color(0xFFD4E600)),
+      decoration: BoxDecoration(color: isDark ? const Color(0xFF1E1E1E) : const Color(0xFFD4E600)),
       child: SafeArea(
         top: false,
         child: Padding(

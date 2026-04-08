@@ -168,8 +168,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: const Color(0xFFD4ED26),
+      backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFD4ED26),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : Stack(
@@ -179,9 +180,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
                   children: [
                     Container(
                       height: MediaQuery.of(context).size.height * 0.25,
-                      color: const Color(0xFF5B8DEF),
+                      color: isDark ? const Color(0xFF1A237E) : const Color(0xFF5B8DEF),
                     ),
-                    Expanded(child: Container(color: const Color(0xFFD4ED26))),
+                    Expanded(child: Container(color: isDark ? const Color(0xFF121212) : const Color(0xFFD4ED26))),
                   ],
                 ),
 
@@ -189,7 +190,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                   clipper: _WaveClipper(),
                   child: Container(
                     height: MediaQuery.of(context).size.height * 0.55,
-                    color: const Color(0xFF2D3250),
+                    color: isDark ? const Color(0xFF1E1E1E) : const Color(0xFF2D3250),
                   ),
                 ),
 
@@ -212,30 +213,70 @@ class _EditProfilePageState extends State<EditProfilePage> {
                       const SizedBox(height: 8),
 
                       // Avatar
+                      // ── Avatar ──────────────────────────────────────────────
                       GestureDetector(
                         onTap: showImagePicker,
-                        child: Container(
-                          width: 100,
-                          height: 100,
-                          decoration: const BoxDecoration(
-                            color: Color(0xFFF5C518),
-                            shape: BoxShape.circle,
-                          ),
-                          child: ClipOval(
-                            child: selectedImage != null
-                                ? Image.file(selectedImage!, fit: BoxFit.cover)
-                                : (profilePhotoUrl != null &&
-                                      profilePhotoUrl!.isNotEmpty)
-                                ? Image.network(
-                                    profilePhotoUrl!,
-                                    fit: BoxFit.cover,
-                                  )
-                                : const Icon(
-                                    Icons.person,
-                                    size: 60,
-                                    color: Color(0xFF2D3250),
-                                  ),
-                          ),
+                        child: Stack(
+                          alignment: Alignment.bottomRight,
+                          children: [
+                            Container(
+                              width: 100,
+                              height: 100,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFF5C518),
+                                shape: BoxShape.circle,
+                              ),
+                              child: ClipOval(
+                                child: selectedImage != null
+                                    ? Image.file(
+                                        selectedImage!,
+                                        fit: BoxFit.cover,
+                                      )
+                                    : (profilePhotoUrl != null &&
+                                          profilePhotoUrl!.isNotEmpty)
+                                    ? Image.network(
+                                        profilePhotoUrl!,
+                                        fit: BoxFit.cover,
+                                      )
+                                    : const Icon(
+                                        Icons.person,
+                                        size: 60,
+                                        color: Color(0xFF2D3250),
+                                      ),
+                              ),
+                            ),
+
+                            // Icon edit overlay
+                            Container(
+                              width: 30,
+                              height: 30,
+                              decoration: BoxDecoration(
+                                color: Colors.blueAccent,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Colors.white,
+                                  width: 2,
+                                ),
+                              ),
+                              child: const Icon(
+                                Icons.edit,
+                                color: Colors.white,
+                                size: 18,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 8),
+
+                      // Text hint
+                      const Text(
+                        "Tap to change photo",
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 12,
+                          fontStyle: FontStyle.italic,
                         ),
                       ),
 
@@ -248,11 +289,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
                           child: Container(
                             padding: const EdgeInsets.all(24),
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: Theme.of(context).cardColor,
                               borderRadius: BorderRadius.circular(20),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.08),
+                                  color: Colors.black.withOpacity(isDark ? 0.3 : 0.08),
                                   blurRadius: 20,
                                   offset: const Offset(0, 4),
                                 ),
@@ -332,23 +373,36 @@ class _EditProfilePageState extends State<EditProfilePage> {
     bool enabled = true,
     TextInputType? keyboardType,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return TextField(
       controller: controller,
       enabled: enabled,
       keyboardType: keyboardType,
-      style: const TextStyle(fontSize: 15),
+      style: TextStyle(
+        fontSize: 15,
+        color: enabled
+            ? Theme.of(context).colorScheme.onSurface
+            : Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+      ),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: TextStyle(color: Colors.grey.shade500, fontSize: 13),
-        filled: !enabled,
-        fillColor: enabled ? null : Colors.grey.shade100,
+        labelStyle: TextStyle(
+          color: isDark ? Colors.grey.shade400 : Colors.grey.shade500,
+          fontSize: 13,
+        ),
+        filled: true,
+        fillColor: enabled
+            ? (isDark ? const Color(0xFF2A2A2A) : Colors.white)
+            : (isDark ? const Color(0xFF252525) : Colors.grey.shade100),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
           vertical: 14,
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(color: Colors.grey.shade300),
+          borderSide: BorderSide(
+            color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+          ),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
@@ -356,7 +410,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
         ),
         disabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(color: Colors.grey.shade200),
+          borderSide: BorderSide(
+            color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
+          ),
         ),
       ),
     );

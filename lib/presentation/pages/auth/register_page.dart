@@ -101,44 +101,32 @@ class _RegisterPageState extends State<RegisterPage> {
     padding: const EdgeInsets.only(bottom: 8),
     child: Text(
       label,
-      style: const TextStyle(
-        color: Color(0xFF4A4A4A),
+      style: TextStyle(
+        color: Theme.of(context).colorScheme.onSurface,
         fontSize: 14,
         fontWeight: FontWeight.w500,
       ),
     ),
   );
 
-  InputDecoration _fieldDecoration({Widget? suffixIcon}) => InputDecoration(
-    filled: true,
-    fillColor: const Color(0xFFEEEEEE),
-    border: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10),
-      borderSide: BorderSide.none,
-    ),
-    enabledBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10),
-      borderSide: BorderSide.none,
-    ),
-    focusedBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10),
-      borderSide: const BorderSide(color: Color(0xFF5B7BFF), width: 1.5),
-    ),
-    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-    suffixIcon: suffixIcon,
-  );
+  InputDecoration _fieldDecoration({Widget? suffixIcon}) {
+    return InputDecoration(
+      suffixIcon: suffixIcon,
+    );
+  }
 
   // ── build ─────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: const Color(0xFFD4E600), // yellow bottom accent
+      backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFF3D4560),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // ── dark header ──
           Container(
-            color: const Color(0xFF3D4560),
+            color: isDark ? const Color(0xFF121212) : const Color(0xFF3D4560),
             child: SafeArea(
               bottom: false,
               child: Padding(
@@ -174,9 +162,9 @@ class _RegisterPageState extends State<RegisterPage> {
           Expanded(
             child: SingleChildScrollView(
               child: Container(
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.only(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).cardColor,
+                  borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(28),
                     topRight: Radius.circular(28),
                   ),
@@ -189,9 +177,9 @@ class _RegisterPageState extends State<RegisterPage> {
                     _buildLabel('Nama'),
                     TextField(
                       controller: nameC,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
-                        color: Color(0xFF222222),
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                       decoration: _fieldDecoration(),
                     ),
@@ -202,9 +190,9 @@ class _RegisterPageState extends State<RegisterPage> {
                     TextField(
                       controller: emailC,
                       keyboardType: TextInputType.emailAddress,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
-                        color: Color(0xFF222222),
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                       decoration: _fieldDecoration(),
                     ),
@@ -215,9 +203,9 @@ class _RegisterPageState extends State<RegisterPage> {
                     TextField(
                       controller: passC,
                       obscureText: _obscurePassword,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
-                        color: Color(0xFF222222),
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                       decoration: _fieldDecoration(
                         suffixIcon: IconButton(
@@ -247,11 +235,11 @@ class _RegisterPageState extends State<RegisterPage> {
                       onChanged: (value) =>
                           setState(() => jenisKelamin = value!),
                       decoration: _fieldDecoration(),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
-                        color: Color(0xFF222222),
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
-                      dropdownColor: Colors.white,
+                      dropdownColor: Theme.of(context).cardColor,
                       borderRadius: BorderRadius.circular(10),
                     ),
                     const SizedBox(height: 20),
@@ -268,16 +256,16 @@ class _RegisterPageState extends State<RegisterPage> {
                       }).toList(),
                       onChanged: handleBatchChange,
                       decoration: _fieldDecoration(),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
-                        color: Color(0xFF222222),
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
-                      dropdownColor: Colors.white,
+                      dropdownColor: Theme.of(context).cardColor,
                       borderRadius: BorderRadius.circular(10),
-                      hint: const Text(
+                      hint: Text(
                         'Pilih Batch',
                         style: TextStyle(
-                          color: Color(0xFFAAAAAA),
+                          color: Theme.of(context).hintColor,
                           fontSize: 14,
                         ),
                       ),
@@ -296,16 +284,16 @@ class _RegisterPageState extends State<RegisterPage> {
                       }).toList(),
                       onChanged: (value) => setState(() => trainingId = value),
                       decoration: _fieldDecoration(),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
-                        color: Color(0xFF222222),
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
-                      dropdownColor: Colors.white,
+                      dropdownColor: Theme.of(context).cardColor,
                       borderRadius: BorderRadius.circular(10),
-                      hint: const Text(
+                      hint: Text(
                         'Pilih Pelatihan',
                         style: TextStyle(
-                          color: Color(0xFFAAAAAA),
+                          color: Theme.of(context).hintColor,
                           fontSize: 14,
                         ),
                       ),
@@ -358,17 +346,17 @@ class _RegisterPageState extends State<RegisterPage> {
                         onTap: () =>
                             Navigator.pushReplacementNamed(context, '/login'),
                         child: RichText(
-                          text: const TextSpan(
+                          text: TextSpan(
                             text: "Sudah punya akun? ",
                             style: TextStyle(
-                              color: Color(0xFF888888),
+                              color: isDark ? Colors.grey.shade400 : const Color(0xFF888888),
                               fontSize: 14,
                             ),
                             children: [
                               TextSpan(
                                 text: 'Login',
                                 style: TextStyle(
-                                  color: Color(0xFF222222),
+                                  color: Theme.of(context).colorScheme.primary,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),

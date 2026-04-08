@@ -57,8 +57,9 @@ class _IzinPageState extends State<IzinPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: const Color(0xFF2A3347),
+      backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFF2A3347),
       body: Stack(
         children: [
           Column(
@@ -119,9 +120,9 @@ class _IzinPageState extends State<IzinPage> {
                   children: [
                     Container(
                       width: double.infinity,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFF5F5F5),
-                        borderRadius: BorderRadius.vertical(
+                      decoration: BoxDecoration(
+                        color: isDark ? Theme.of(context).scaffoldBackgroundColor : const Color(0xFFF5F5F5),
+                        borderRadius: const BorderRadius.vertical(
                           top: Radius.circular(28),
                         ),
                       ),
@@ -151,11 +152,11 @@ class _IzinPageState extends State<IzinPage> {
                       padding: const EdgeInsets.fromLTRB(20, 28, 20, 60),
                       child: Container(
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: Theme.of(context).cardColor,
                           borderRadius: BorderRadius.circular(20),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.06),
+                              color: Colors.black.withOpacity(isDark ? 0.3 : 0.06),
                               blurRadius: 12,
                               offset: const Offset(0, 4),
                             ),
@@ -166,24 +167,24 @@ class _IzinPageState extends State<IzinPage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             /// TITLE
-                            const Text(
+                            Text(
                               "Form Izin",
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w700,
-                                color: Color(0xFF2A3347),
+                                color: Theme.of(context).colorScheme.onSurface,
                               ),
                             ),
 
                             const SizedBox(height: 20),
 
                             /// DATE
-                            const Text(
+                            Text(
                               "Tanggal Izin",
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w500,
-                                color: Color(0xFF444444),
+                                color: Theme.of(context).colorScheme.onSurface,
                               ),
                             ),
                             const SizedBox(height: 6),
@@ -195,7 +196,7 @@ class _IzinPageState extends State<IzinPage> {
                                   vertical: 12,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFF0F0F0),
+                                  color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF0F0F0),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Row(
@@ -206,15 +207,15 @@ class _IzinPageState extends State<IzinPage> {
                                       DateFormat(
                                         'EEEE, dd MMM yyyy',
                                       ).format(selectedDate),
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 13,
-                                        color: Color(0xFF555555),
+                                        color: Theme.of(context).colorScheme.onSurface,
                                       ),
                                     ),
-                                    const Icon(
+                                    Icon(
                                       Icons.calendar_today_outlined,
                                       size: 16,
-                                      color: Color(0xFF888888),
+                                      color: Theme.of(context).hintColor,
                                     ),
                                   ],
                                 ),
@@ -224,28 +225,31 @@ class _IzinPageState extends State<IzinPage> {
                             const SizedBox(height: 16),
 
                             /// ALASAN
-                            const Text(
+                            Text(
                               "Alasan",
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w500,
-                                color: Color(0xFF444444),
+                                color: Theme.of(context).colorScheme.onSurface,
                               ),
                             ),
                             const SizedBox(height: 6),
                             TextField(
                               controller: alasanController,
                               maxLines: 4,
-                              style: const TextStyle(fontSize: 13),
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
                               decoration: InputDecoration(
                                 hintText:
                                     "Contoh: Sakit, ada keperluan keluarga...",
-                                hintStyle: const TextStyle(
+                                hintStyle: TextStyle(
                                   fontSize: 12.5,
-                                  color: Color(0xFFBBBBBB),
+                                  color: Theme.of(context).hintColor,
                                 ),
                                 filled: true,
-                                fillColor: const Color(0xFFF9F9F9),
+                                fillColor: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF9F9F9),
                                 contentPadding: const EdgeInsets.all(14),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),

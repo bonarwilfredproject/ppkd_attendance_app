@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:ppkd_attendance_app/core/services/auth_services.dart';
 import 'package:ppkd_attendance_app/data/repositories/auth_repository.dart';
 import 'package:ppkd_attendance_app/presentation/pages/check_in/check_in_page.dart';
 import 'package:ppkd_attendance_app/presentation/pages/profile/change_password_page.dart';
+import 'package:ppkd_attendance_app/presentation/providers/theme_provider.dart';
 import 'edit_profile_page.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -30,8 +32,9 @@ class _ProfilePageState extends State<ProfilePage> {
       {'icon': Icons.person_outline, 'label': 'Profile'},
     ];
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      decoration: const BoxDecoration(color: Color(0xFFD4E600)),
+      decoration: BoxDecoration(color: isDark ? const Color(0xFF1E1E1E) : const Color(0xFFD4E600)),
       child: SafeArea(
         top: false,
         child: Padding(
@@ -135,6 +138,91 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
+  Future<void> showLogoutDialog() async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardColor,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.logout, size: 50, color: Theme.of(context).colorScheme.onSurface),
+                const SizedBox(height: 16),
+                Text(
+                  "Keluar dari akun?",
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  "Kamu harus login kembali untuk mengakses aplikasi.",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 14, color: Colors.grey),
+                ),
+                const SizedBox(height: 20),
+
+                Row(
+                  children: [
+                    // Tombol Batal
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: Color(0xFF5B8DEF)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          "Batal",
+                          style: TextStyle(color: Color(0xFF5B8DEF)),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+
+                    // Tombol Logout
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          Navigator.pop(context); // tutup dialog dulu
+                          await handleLogout();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          "Keluar",
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -143,9 +231,12 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final themeProvider = Provider.of<ThemeProvider>(context);
+
     return Scaffold(
       bottomNavigationBar: _buildBottomNav(),
-      backgroundColor: const Color(0xFFD4ED26), // yellow-green bottom
+      backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFD4ED26),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : Stack(
@@ -156,10 +247,10 @@ class _ProfilePageState extends State<ProfilePage> {
                     // Blue top
                     Container(
                       height: MediaQuery.of(context).size.height * 0.25,
-                      color: const Color(0xFF5B8DEF),
+                      color: isDark ? const Color(0xFF1A237E) : const Color(0xFF5B8DEF),
                     ),
                     // Dark navy curve area
-                    Expanded(child: Container(color: const Color(0xFFD4ED26))),
+                    Expanded(child: Container(color: isDark ? const Color(0xFF121212) : const Color(0xFFD4ED26))),
                   ],
                 ),
 
@@ -168,7 +259,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   clipper: _WaveClipper(),
                   child: Container(
                     height: MediaQuery.of(context).size.height * 0.55,
-                    color: const Color(0xFF2D3250),
+                    color: isDark ? const Color(0xFF1E1E1E) : const Color(0xFF2D3250),
                   ),
                 ),
 
@@ -221,9 +312,9 @@ class _ProfilePageState extends State<ProfilePage> {
 
                       const SizedBox(height: 4),
 
-                      // Phone
+                      // Email
                       Text(
-                        phone.isEmpty ? '-' : phone,
+                        email.isEmpty ? '-' : email,
                         style: TextStyle(
                           color: Colors.white.withOpacity(0.6),
                           fontSize: 14,
@@ -258,11 +349,11 @@ class _ProfilePageState extends State<ProfilePage> {
                         padding: const EdgeInsets.symmetric(horizontal: 24),
                         child: Container(
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: Theme.of(context).cardColor,
                             borderRadius: BorderRadius.circular(20),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.08),
+                                color: Colors.black.withOpacity(isDark ? 0.3 : 0.08),
                                 blurRadius: 20,
                                 offset: const Offset(0, 4),
                               ),
@@ -336,12 +427,34 @@ class _ProfilePageState extends State<ProfilePage> {
                                       },
                               ),
                               _buildDivider(),
+
+                              // 🌙 Dark Mode Toggle
+                              ListTile(
+                                leading: Icon(
+                                  isDark ? Icons.dark_mode : Icons.light_mode,
+                                  color: const Color(0xFF5B8DEF),
+                                ),
+                                title: Text(
+                                  'Mode Gelap',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w500,
+                                    color: Theme.of(context).colorScheme.onSurface,
+                                  ),
+                                ),
+                                trailing: Switch(
+                                  value: themeProvider.isDarkMode,
+                                  onChanged: (_) => themeProvider.toggle(),
+                                  activeTrackColor: const Color(0xFF5B8DEF),
+                                ),
+                              ),
+                              _buildDivider(),
+
                               _buildMenuItem(
                                 icon: Icons.logout,
                                 iconColor: Colors.red,
                                 title: 'Keluar',
                                 titleColor: Colors.red,
-                                onTap: handleLogout,
+                                onTap: showLogoutDialog,
                               ),
                             ],
                           ),
@@ -355,7 +468,7 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildDivider() => const Divider(height: 1, indent: 16, endIndent: 16);
+  Widget _buildDivider() => Divider(height: 1, indent: 16, endIndent: 16, color: Theme.of(context).dividerColor);
 
   Widget _buildMenuItem({
     required IconData icon,
@@ -371,10 +484,10 @@ class _ProfilePageState extends State<ProfilePage> {
         title,
         style: TextStyle(
           fontWeight: FontWeight.w500,
-          color: titleColor ?? const Color(0xFF2D3250),
+          color: titleColor ?? Theme.of(context).colorScheme.onSurface,
         ),
       ),
-      trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+      trailing: Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4)),
     );
   }
 }
