@@ -288,7 +288,7 @@ class _HistoryPageState extends State<HistoryPage> {
                 ? const Center(child: CircularProgressIndicator())
                 : data.isEmpty
                 ? const Center(child: Text('Belum ada data'))
-                : _buildList(),
+                : SingleChildScrollView(child: _buildList()),
           ),
         ],
       ),

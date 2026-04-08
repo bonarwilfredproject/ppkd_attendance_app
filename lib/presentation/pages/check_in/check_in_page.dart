@@ -211,7 +211,9 @@ class _CheckInPageState extends State<CheckInPage> {
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFD4E600),
+      backgroundColor: isDark
+          ? const Color(0xFF121212)
+          : const Color(0xFFD4E600),
       body: Stack(
         children: [
           // ── full-screen map ──
@@ -258,13 +260,16 @@ class _CheckInPageState extends State<CheckInPage> {
                     // back button
                     Padding(
                       padding: const EdgeInsets.only(left: 8),
+
                       child: CircleAvatar(
-                        backgroundColor: Colors.white,
+                        backgroundColor: isDark
+                            ? const Color(0xFF2A2A2A) // dark surface
+                            : Colors.white,
                         radius: 20,
                         child: IconButton(
-                          icon: const Icon(
+                          icon: Icon(
                             Icons.arrow_back,
-                            color: Colors.black87,
+                            color: isDark ? Colors.white : Colors.black87,
                             size: 20,
                           ),
                           onPressed: () => Navigator.pop(context),
@@ -278,12 +283,14 @@ class _CheckInPageState extends State<CheckInPage> {
                     Padding(
                       padding: const EdgeInsets.only(right: 8),
                       child: CircleAvatar(
-                        backgroundColor: Colors.white,
+                        backgroundColor: isDark
+                            ? const Color(0xFF2A2A2A)
+                            : Colors.white,
                         radius: 20,
                         child: IconButton(
-                          icon: const Icon(
+                          icon: Icon(
                             Icons.refresh,
-                            color: Colors.black87,
+                            color: isDark ? Colors.white : Colors.black87,
                             size: 20,
                           ),
                           onPressed: _initLocation,
@@ -306,7 +313,9 @@ class _CheckInPageState extends State<CheckInPage> {
               return Container(
                 decoration: BoxDecoration(
                   color: Theme.of(context).cardColor,
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(24),
+                  ),
                 ),
                 child: SingleChildScrollView(
                   controller: scrollController,
@@ -383,7 +392,9 @@ class _CheckInPageState extends State<CheckInPage> {
                                     style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
-                                      color: Theme.of(context).colorScheme.onSurface,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurface,
                                     ),
                                   ),
                                   const SizedBox(height: 4),
@@ -399,7 +410,10 @@ class _CheckInPageState extends State<CheckInPage> {
                                           address,
                                           style: TextStyle(
                                             fontSize: 13,
-                                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .onSurface
+                                                .withOpacity(0.6),
                                             height: 1.5,
                                           ),
                                         ),
@@ -415,7 +429,9 @@ class _CheckInPageState extends State<CheckInPage> {
                           children: [
                             Icon(
                               Icons.notes,
-                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withOpacity(0.6),
                               size: 20,
                             ),
                             const SizedBox(width: 10),
@@ -423,7 +439,9 @@ class _CheckInPageState extends State<CheckInPage> {
                               child: TextField(
                                 controller: noteC,
                                 style: TextStyle(
-                                  color: Theme.of(context).colorScheme.onSurface,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface,
                                   fontSize: 14,
                                 ),
                                 decoration: InputDecoration(
@@ -450,7 +468,9 @@ class _CheckInPageState extends State<CheckInPage> {
                               'Status : ',
                               style: TextStyle(
                                 fontSize: 14,
-                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurface.withOpacity(0.6),
                               ),
                             ),
                             Text(
@@ -542,7 +562,9 @@ class _CheckInPageState extends State<CheckInPage> {
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      decoration: BoxDecoration(color: isDark ? const Color(0xFF1E1E1E) : const Color(0xFFD4E600)),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E1E1E) : const Color(0xFFD4E600),
+      ),
       child: SafeArea(
         top: false,
         child: Padding(
