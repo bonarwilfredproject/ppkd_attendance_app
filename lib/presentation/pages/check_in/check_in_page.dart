@@ -21,8 +21,10 @@ class CheckInPage extends StatefulWidget {
 
 class _CheckInPageState extends State<CheckInPage> {
   // ── geofence constants ──────────────────────────────────
-  static const double _officeLat = -6.210667476488463;
-  static const double _officeLng = 106.8129638539556;
+  static const bool _mockLocationForTesting =
+      false; // 🔥 Set to FALSE when releasing app
+  static const double _officeLat = -6.210731471676829;
+  static const double _officeLng = 106.81299604066831;
   static const double _maxRadiusMeters = 60.0;
   static const String _officeName = 'PPKD Jakarta Pusat (Bendungan Hilir)';
 
@@ -116,11 +118,15 @@ class _CheckInPageState extends State<CheckInPage> {
   Future<void> _initLocation() async {
     try {
       final pos = await LocationService.getCurrentLocation();
-      final latLng = LatLng(pos.latitude, pos.longitude);
+      LatLng latLng = LatLng(pos.latitude, pos.longitude);
+
+      if (_mockLocationForTesting) {
+        latLng = const LatLng(_officeLat, _officeLng);
+      }
 
       List<Placemark> placemarks = await placemarkFromCoordinates(
-        pos.latitude,
-        pos.longitude,
+        latLng.latitude,
+        latLng.longitude,
       );
       final place = placemarks.first;
       final addr =
@@ -128,10 +134,20 @@ class _CheckInPageState extends State<CheckInPage> {
 
       setState(() {
         currentLatLng = latLng;
-        address = addr;
         isLoading = false;
         _updateDistance();
+
+        if (_isInRange) {
+          address = '$_officeName\n$addr';
+        } else {
+          address = addr;
+        }
       });
+
+      // Animate map to the freshly acquired location
+      if (mapController != null && currentLatLng != null) {
+        mapController!.animateCamera(CameraUpdate.newLatLng(currentLatLng!));
+      }
 
       // Start live tracking
       positionStream =
@@ -141,7 +157,10 @@ class _CheckInPageState extends State<CheckInPage> {
               distanceFilter: 5,
             ),
           ).listen((pos) async {
-            final newLatLng = LatLng(pos.latitude, pos.longitude);
+            LatLng newLatLng = LatLng(pos.latitude, pos.longitude);
+            if (_mockLocationForTesting) {
+              newLatLng = const LatLng(_officeLat, _officeLng);
+            }
             setState(() {
               currentLatLng = newLatLng;
               _updateDistance();
@@ -201,19 +220,21 @@ class _CheckInPageState extends State<CheckInPage> {
     setState(() => isSubmitting = true);
 
     try {
-      final pos = await LocationService.getCurrentLocation();
+      final posLat = currentLatLng!.latitude;
+      final posLng = currentLatLng!.longitude;
+
       List<Placemark> placemarks = await placemarkFromCoordinates(
-        pos.latitude,
-        pos.longitude,
+        posLat,
+        posLng,
       );
       final place = placemarks.first;
       final addr = "${place.street}, ${place.locality}, ${place.country}";
 
       dynamic res;
       if (isCheckOutMode) {
-        res = await repo.checkOut(pos.latitude, pos.longitude, addr);
+        res = await repo.checkOut(posLat, posLng, addr);
       } else {
-        res = await repo.checkIn(pos.latitude, pos.longitude, addr);
+        res = await repo.checkIn(posLat, posLng, addr);
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -276,6 +297,8 @@ class _CheckInPageState extends State<CheckInPage> {
                         Marker(
                           markerId: const MarkerId('me'),
                           position: currentLatLng!,
+                          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+                          infoWindow: const InfoWindow(title: "Posisi Saya"),
                         ),
                       // Office marker
                       Marker(
@@ -302,8 +325,8 @@ class _CheckInPageState extends State<CheckInPage> {
                     padding: EdgeInsets.only(
                       bottom: MediaQuery.of(context).size.height * sheetSize,
                     ),
-                    myLocationEnabled: true,
-                    myLocationButtonEnabled: false,
+                    myLocationEnabled: !_mockLocationForTesting,
+                    myLocationButtonEnabled: true,
                     zoomControlsEnabled: false,
                   ),
           ),

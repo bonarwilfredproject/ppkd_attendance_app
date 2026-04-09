@@ -110,10 +110,9 @@ class _HistoryPageState extends State<HistoryPage> {
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 12,
-                        color: Theme.of(dialogContext)
-                            .colorScheme
-                            .onSurface
-                            .withOpacity(0.6),
+                        color: Theme.of(
+                          dialogContext,
+                        ).colorScheme.onSurface.withOpacity(0.6),
                       ),
                     ),
 
@@ -160,8 +159,8 @@ class _HistoryPageState extends State<HistoryPage> {
                             color: errorText != null
                                 ? Colors.red
                                 : isDark
-                                    ? Colors.grey.shade700
-                                    : Colors.grey.shade300,
+                                ? Colors.grey.shade700
+                                : Colors.grey.shade300,
                           ),
                         ),
 
@@ -176,16 +175,12 @@ class _HistoryPageState extends State<HistoryPage> {
 
                         errorBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
-                          borderSide: const BorderSide(
-                            color: Colors.red,
-                          ),
+                          borderSide: const BorderSide(color: Colors.red),
                         ),
 
                         focusedErrorBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
-                          borderSide: const BorderSide(
-                            color: Colors.red,
-                          ),
+                          borderSide: const BorderSide(color: Colors.red),
                         ),
 
                         errorText: errorText,
@@ -229,9 +224,9 @@ class _HistoryPageState extends State<HistoryPage> {
                               style: TextStyle(
                                 color: isDeleting
                                     ? Colors.grey
-                                    : Theme.of(dialogContext)
-                                        .colorScheme
-                                        .onSurface,
+                                    : Theme.of(
+                                        dialogContext,
+                                      ).colorScheme.onSurface,
                               ),
                             ),
                           ),
@@ -243,8 +238,8 @@ class _HistoryPageState extends State<HistoryPage> {
                                 ? null
                                 : () async {
                                     // Validate empty password
-                                    final password =
-                                        passwordController.text.trim();
+                                    final password = passwordController.text
+                                        .trim();
                                     if (password.isEmpty) {
                                       setStateDialog(() {
                                         errorText = "Password wajib diisi";
@@ -288,14 +283,15 @@ class _HistoryPageState extends State<HistoryPage> {
 
                                       final message = res['message'] ?? '';
 
-                                      if (message
-                                          .toLowerCase()
-                                          .contains("berhasil dihapus")) {
+                                      if (message.toLowerCase().contains(
+                                        "berhasil dihapus",
+                                      )) {
                                         // Success — close dialog
                                         if (dialogContext.mounted) {
                                           Navigator.pop(dialogContext, true);
-                                          ScaffoldMessenger.of(context)
-                                              .showSnackBar(
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
                                             SnackBar(
                                               content: Text(message),
                                               backgroundColor: Colors.green,
@@ -474,35 +470,12 @@ class _HistoryPageState extends State<HistoryPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // section title
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.history,
-                  color: Theme.of(context).colorScheme.onSurface,
-                  size: 22,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Attendance History',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
           ListView.separated(
+            padding: EdgeInsets.zero,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: data.length,
-            separatorBuilder: (_, __) =>
-                Divider(height: 1, color: Theme.of(context).dividerColor),
+            separatorBuilder: (_, __) => const SizedBox(height: 12),
             itemBuilder: (context, index) {
               final item = data[index];
               final dateStr = item['attendance_date'] ?? item['date'] ?? '';
@@ -512,9 +485,10 @@ class _HistoryPageState extends State<HistoryPage> {
               final checkInAddress = item['check_in_address'] ?? '-';
               final checkOutAddress = item['check_out_address'] ?? '-';
               final status = item['status'];
+
               return Dismissible(
                 key: Key(item['id'].toString()),
-                direction: DismissDirection.endToStart, // swipe ke kiri
+                direction: DismissDirection.endToStart,
                 background: Container(
                   alignment: Alignment.centerRight,
                   padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -524,7 +498,6 @@ class _HistoryPageState extends State<HistoryPage> {
                   ),
                   child: const Icon(Icons.delete, color: Colors.white),
                 ),
-
                 confirmDismiss: (_) async {
                   final confirm = await showDialog<bool>(
                     context: context,
@@ -544,7 +517,6 @@ class _HistoryPageState extends State<HistoryPage> {
                               size: 40,
                             ),
                             const SizedBox(height: 12),
-
                             Text(
                               "Hapus Absen",
                               style: TextStyle(
@@ -553,9 +525,7 @@ class _HistoryPageState extends State<HistoryPage> {
                                 color: Theme.of(context).colorScheme.onSurface,
                               ),
                             ),
-
                             const SizedBox(height: 8),
-
                             Text(
                               "Yakin mau hapus data ini?",
                               textAlign: TextAlign.center,
@@ -566,9 +536,7 @@ class _HistoryPageState extends State<HistoryPage> {
                                 ).colorScheme.onSurface.withOpacity(0.6),
                               ),
                             ),
-
                             const SizedBox(height: 20),
-
                             Row(
                               children: [
                                 Expanded(
@@ -616,108 +584,221 @@ class _HistoryPageState extends State<HistoryPage> {
                   );
 
                   if (confirm != true) return false;
-
                   final success = await handleDeleteAbsen(item['id']);
-
                   if (!success) return false;
 
-                  // Hapus item dari list lokal supaya langsung hilang dari tampilan
                   setState(() {
                     data.removeAt(index);
                   });
-
-                  return false; // return false karena item sudah dihapus dari list via setState
+                  return false;
                 },
-
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 14,
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF2A2A2A) : Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: isDark
+                          ? Colors.grey.shade800
+                          : Colors.grey.shade200,
+                    ),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Header: Date and Badge
                       Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Expanded(
-                            child: Text(
-                              _formatDate(dateStr),
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Theme.of(context).colorScheme.onSurface,
-                              ),
-                            ),
-                          ),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
+                          Row(
                             children: [
-                              Text(
-                                '$checkIn - $checkOut',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: late
-                                      ? Colors.red
-                                      : Theme.of(context).colorScheme.onSurface,
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: const Color(
+                                    0xFF5B7BFF,
+                                  ).withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: const Icon(
+                                  Icons.calendar_month,
+                                  size: 16,
+                                  color: Color(0xFF5B7BFF),
                                 ),
                               ),
-                              const SizedBox(height: 4),
-                              _buildHistoryBadge(status, late),
+                              const SizedBox(width: 12),
+                              Text(
+                                _formatDate(dateStr),
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface,
+                                ),
+                              ),
                             ],
                           ),
+                          _buildHistoryBadge(status, late),
                         ],
                       ),
 
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 16),
 
-                      // 📍 LOCATION
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Icon(
-                            Icons.location_on,
-                            size: 16,
-                            color: Colors.grey,
-                          ),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Text(
-                              'Masuk: $checkInAddress',
-                              maxLines: 2,
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      // kalau ada check out → tampilkan juga
-                      if (checkOutAddress != '-' &&
-                          checkOutAddress != null) ...[
-                        const SizedBox(height: 4),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Icon(
-                              Icons.outbond,
-                              size: 16,
-                              color: Colors.grey,
-                            ),
-                            const SizedBox(width: 6),
-                            Expanded(
-                              child: Text(
-                                'Keluar: $checkOutAddress',
-                                maxLines: 2,
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey,
+                      // Times & Location Grid
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? const Color(0xFF1E1E1E)
+                              : Colors.grey.shade50,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: IntrinsicHeight(
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              // ── Check In Area ──
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          Icons.login,
+                                          size: 14,
+                                          color: late ? Colors.red : Colors.green,
+                                        ),
+                                        const SizedBox(width: 6),
+                                        const Text(
+                                          'Waktu Masuk',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      checkIn,
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: late
+                                            ? Colors.red
+                                            : Theme.of(
+                                                context,
+                                              ).colorScheme.onSurface,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        const Icon(
+                                          Icons.location_on,
+                                          size: 12,
+                                          color: Colors.grey,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Expanded(
+                                          child: Text(
+                                            checkInAddress,
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: const TextStyle(
+                                              fontSize: 11,
+                                              color: Colors.grey,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
                                 ),
                               ),
-                            ),
-                          ],
+
+                              // ── Divider ──
+                              VerticalDivider(
+                                color: isDark
+                                    ? Colors.grey.shade800
+                                    : Colors.grey.shade300,
+                                thickness: 1,
+                                width: 24,
+                              ),
+
+                              // ── Check Out Area ──
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.logout,
+                                          size: 14,
+                                          color: Colors.blue,
+                                        ),
+                                        const SizedBox(width: 6),
+                                        const Text(
+                                          'Waktu Pulang',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      checkOut,
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.onSurface,
+                                      ),
+                                    ),
+                                    if (checkOutAddress != '-' &&
+                                        checkOutAddress != '') ...[
+                                      const SizedBox(height: 4),
+                                      Row(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          const Icon(
+                                            Icons.location_on,
+                                            size: 12,
+                                            color: Colors.grey,
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Expanded(
+                                            child: Text(
+                                              checkOutAddress,
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: const TextStyle(
+                                                fontSize: 11,
+                                                color: Colors.grey,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ],
+                      ),
                     ],
                   ),
                 ),

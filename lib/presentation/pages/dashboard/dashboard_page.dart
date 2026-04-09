@@ -969,29 +969,44 @@ class _DashboardPageState extends State<DashboardPage> {
                 )
               : Padding(
                   padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-                  child: Row(
-                    children: [
-                      _buildStatCard(
-                        icon: Icons.event_available_rounded,
-                        label: 'Total Absen',
-                        value: totalAbsen.toString(),
-                        gradient: const [Color(0xFF5B7BFF), Color(0xFF7FA1FF)],
-                      ),
-                      const SizedBox(width: 10),
-                      _buildStatCard(
-                        icon: Icons.check_circle_outline_rounded,
-                        label: 'Hadir',
-                        value: totalMasuk.toString(),
-                        gradient: const [Color(0xFF43A047), Color(0xFF66BB6A)],
-                      ),
-                      const SizedBox(width: 10),
-                      _buildStatCard(
-                        icon: Icons.event_busy_rounded,
-                        label: 'Izin',
-                        value: totalIzin.toString(),
-                        gradient: const [Color(0xFFFF8F00), Color(0xFFFFB74D)],
-                      ),
-                    ],
+                  child: SizedBox(
+                    height: 170, // fixed height for bento style layout
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Expanded(
+                          flex: 1,
+                          child: _buildBentoMainCard(
+                            icon: Icons.event_available_rounded,
+                            label: 'Total Absen',
+                            value: totalAbsen.toString(),
+                            color: const Color(0xFF5B7BFF),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          flex: 1,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              _buildBentoSubCard(
+                                icon: Icons.check_circle_outline_rounded,
+                                label: 'Hadir',
+                                value: totalMasuk.toString(),
+                                color: const Color(0xFF43A047),
+                              ),
+                              const SizedBox(height: 12),
+                              _buildBentoSubCard(
+                                icon: Icons.event_busy_rounded,
+                                label: 'Izin',
+                                value: totalIzin.toString(),
+                                color: const Color(0xFFFF8F00),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
         ],
@@ -999,58 +1014,124 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  Widget _buildStatCard({
+  Widget _buildBentoMainCard({
     required IconData icon,
     required String label,
     required String value,
-    required List<Color> gradient,
+    required Color color,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [color.withOpacity(0.8), color],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(isDark ? 0.2 : 0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Icon(icon, color: Colors.white, size: 32),
+          ),
+          const Spacer(),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 42,
+              fontWeight: FontWeight.w900,
+              color: Colors.white,
+              height: 1.1,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Colors.white.withOpacity(0.9),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBentoSubCard({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color color,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: gradient,
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+          color: Theme.of(context).cardColor,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
           ),
-          borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: gradient[0].withOpacity(0.3),
-              blurRadius: 8,
+              color: color.withOpacity(isDark ? 0.1 : 0.05),
+              blurRadius: 10,
               offset: const Offset(0, 4),
             ),
           ],
         ),
-        child: Column(
+        child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(10),
+                color: color.withOpacity(0.15),
+                shape: BoxShape.circle,
               ),
-              child: Icon(icon, color: Colors.white, size: 22),
+              child: Icon(icon, color: color, size: 24),
             ),
-            const SizedBox(height: 10),
-            Text(
-              value,
-              style: const TextStyle(
-                fontSize: 26,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                    ),
+                  ),
+                  Text(
+                    value,
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w500,
-                color: Colors.white.withOpacity(0.9),
-              ),
-              textAlign: TextAlign.center,
             ),
           ],
         ),
@@ -1111,45 +1192,133 @@ class _DashboardPageState extends State<DashboardPage> {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: historyData.length,
-              separatorBuilder: (_, __) =>
-                  Divider(height: 1, color: Theme.of(context).dividerColor),
+              separatorBuilder: (_, __) => const SizedBox(height: 12),
               itemBuilder: (context, index) {
                 final item = historyData[index];
                 final dateStr = item['attendance_date'] ?? item['date'] ?? '';
                 final checkIn = item['check_in_time'] ?? '-';
                 final checkOut = item['check_out_time'] ?? '-';
                 final late = _isLate(item['check_in_time']);
+                
+                final isDark = Theme.of(context).brightness == Brightness.dark;
 
-                return Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 14,
+                return Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 20),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF2A2A2A) : Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
+                    ),
                   ),
-                  child: Row(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              _formatHistoryDate(dateStr),
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Theme.of(context).colorScheme.onSurface,
+                      // Header: Date and Badge
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF5B7BFF).withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: const Icon(Icons.calendar_month, size: 16, color: Color(0xFF5B7BFF)),
                               ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '$checkIn - $checkOut',
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: late ? Colors.red : Colors.grey,
+                              const SizedBox(width: 12),
+                              Text(
+                                _formatHistoryDate(dateStr),
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                  color: Theme.of(context).colorScheme.onSurface,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
+                          _buildHistoryBadge(item),
+                        ],
+                      ),
+                      
+                      const SizedBox(height: 16),
+                      
+                      // Times Grid
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF1E1E1E) : Colors.grey.shade50,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: IntrinsicHeight(
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              // ── Check In Area ──
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Icon(Icons.login, size: 14, color: late ? Colors.red : Colors.green),
+                                        const SizedBox(width: 6),
+                                        const Text('Waktu Masuk', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      checkIn,
+                                      style: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.bold,
+                                        color: late ? Colors.red : Theme.of(context).colorScheme.onSurface,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              
+                              // ── Divider ──
+                              VerticalDivider(
+                                color: isDark ? Colors.grey.shade800 : Colors.grey.shade300,
+                                thickness: 1,
+                                width: 24,
+                              ),
+                              
+                              // ── Check Out Area ──
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        const Icon(Icons.logout, size: 14, color: Colors.blue),
+                                        const SizedBox(width: 6),
+                                        const Text('Waktu Pulang', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      checkOut,
+                                      style: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.bold,
+                                        color: Theme.of(context).colorScheme.onSurface,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                      _buildHistoryBadge(item),
                     ],
                   ),
                 );
@@ -1203,15 +1372,21 @@ class _DashboardPageState extends State<DashboardPage> {
                       MaterialPageRoute(
                         builder: (_) => const CheckInPage(isCheckOut: false),
                       ),
-                    );
+                    ).then((_) {
+                      if (mounted) setState(() => _selectedIndex = 0);
+                    });
                   }
 
                   if (i == 2) {
-                    Navigator.pushNamed(context, '/history');
+                    Navigator.pushNamed(context, '/history').then((_) {
+                      if (mounted) setState(() => _selectedIndex = 0);
+                    });
                   }
 
                   if (i == 3) {
-                    Navigator.pushNamed(context, '/profile');
+                    Navigator.pushNamed(context, '/profile').then((_) {
+                      if (mounted) setState(() => _selectedIndex = 0);
+                    });
                   }
                 },
                 child: Column(
