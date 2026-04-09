@@ -20,6 +20,12 @@ class CheckInPage extends StatefulWidget {
 }
 
 class _CheckInPageState extends State<CheckInPage> {
+  // ── geofence constants ──────────────────────────────────
+  static const double _officeLat = -6.210667476488463;
+  static const double _officeLng = 106.8129638539556;
+  static const double _maxRadiusMeters = 60.0;
+  static const String _officeName = 'PPKD Jakarta Pusat (Bendungan Hilir)';
+
   // ── state ────────────────────────────────────────────────
   LatLng? currentLatLng;
   String address = 'Mendapatkan lokasi...';
@@ -38,7 +44,20 @@ class _CheckInPageState extends State<CheckInPage> {
   bool get isCheckedOut => checkOutStatus != null;
   bool isStatusLoading = true;
   late DraggableScrollableController sheetController;
-  double sheetSize = 0.45;
+  double sheetSize = 0.52;
+  double _distanceToOffice = double.infinity;
+  bool get _isInRange => _distanceToOffice <= _maxRadiusMeters;
+
+  /// Calculate distance from current position to the office
+  void _updateDistance() {
+    if (currentLatLng == null) return;
+    _distanceToOffice = Geolocator.distanceBetween(
+      currentLatLng!.latitude,
+      currentLatLng!.longitude,
+      _officeLat,
+      _officeLng,
+    );
+  }
 
   // ── init ─────────────────────────────────────────────────
   @override
@@ -111,6 +130,7 @@ class _CheckInPageState extends State<CheckInPage> {
         currentLatLng = latLng;
         address = addr;
         isLoading = false;
+        _updateDistance();
       });
 
       // Start live tracking
@@ -122,7 +142,10 @@ class _CheckInPageState extends State<CheckInPage> {
             ),
           ).listen((pos) async {
             final newLatLng = LatLng(pos.latitude, pos.longitude);
-            setState(() => currentLatLng = newLatLng);
+            setState(() {
+              currentLatLng = newLatLng;
+              _updateDistance();
+            });
             mapController?.animateCamera(CameraUpdate.newLatLng(newLatLng));
           });
     } catch (e) {
@@ -158,6 +181,23 @@ class _CheckInPageState extends State<CheckInPage> {
   // ── action ────────────────────────────────────────────────
   Future<void> _handleSubmit() async {
     if (currentLatLng == null) return;
+
+    // ── Geofence check ──────────────────────────────────
+    _updateDistance();
+    if (!_isInRange) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Anda berada ${_distanceToOffice.toStringAsFixed(0)}m dari $_officeName. '
+            'Maksimal jarak ${_maxRadiusMeters.toInt()}m untuk absen.',
+          ),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+      return;
+    }
+
     setState(() => isSubmitting = true);
 
     try {
@@ -237,7 +277,31 @@ class _CheckInPageState extends State<CheckInPage> {
                           markerId: const MarkerId('me'),
                           position: currentLatLng!,
                         ),
+                      // Office marker
+                      Marker(
+                        markerId: const MarkerId('office'),
+                        position: const LatLng(_officeLat, _officeLng),
+                        infoWindow: const InfoWindow(title: _officeName),
+                        icon: BitmapDescriptor.defaultMarkerWithHue(
+                          BitmapDescriptor.hueBlue,
+                        ),
+                      ),
                     },
+                    circles: {
+                      Circle(
+                        circleId: const CircleId('geofence'),
+                        center: const LatLng(_officeLat, _officeLng),
+                        radius: _maxRadiusMeters,
+                        fillColor: _isInRange
+                            ? Colors.green.withOpacity(0.15)
+                            : Colors.red.withOpacity(0.10),
+                        strokeColor: _isInRange ? Colors.green : Colors.red,
+                        strokeWidth: 2,
+                      ),
+                    },
+                    padding: EdgeInsets.only(
+                      bottom: MediaQuery.of(context).size.height * sheetSize,
+                    ),
                     myLocationEnabled: true,
                     myLocationButtonEnabled: false,
                     zoomControlsEnabled: false,
@@ -303,12 +367,38 @@ class _CheckInPageState extends State<CheckInPage> {
             ),
           ),
 
+          // ── zoom controls (right side) ──
+          Positioned(
+            right: 12,
+            bottom: MediaQuery.of(context).size.height * sheetSize + 16,
+            child: Column(
+              children: [
+                _buildZoomButton(
+                  icon: Icons.add,
+                  onPressed: () {
+                    mapController?.animateCamera(CameraUpdate.zoomIn());
+                  },
+                  isDark: isDark,
+                  isTop: true,
+                ),
+                _buildZoomButton(
+                  icon: Icons.remove,
+                  onPressed: () {
+                    mapController?.animateCamera(CameraUpdate.zoomOut());
+                  },
+                  isDark: isDark,
+                  isTop: false,
+                ),
+              ],
+            ),
+          ),
+
           // ── bottom sheet ──
           DraggableScrollableSheet(
             controller: sheetController,
-            initialChildSize: 0.45,
-            minChildSize: 0.35,
-            maxChildSize: 0.7,
+            initialChildSize: 0.52,
+            minChildSize: 0.40,
+            maxChildSize: 0.75,
             builder: (context, scrollController) {
               return Container(
                 decoration: BoxDecoration(
@@ -320,7 +410,7 @@ class _CheckInPageState extends State<CheckInPage> {
                 child: SingleChildScrollView(
                   controller: scrollController,
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
+                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -360,7 +450,7 @@ class _CheckInPageState extends State<CheckInPage> {
                           ),
                         ),
 
-                        const SizedBox(height: 6),
+                        const SizedBox(height: 4),
                         Center(
                           child: Text(
                             label,
@@ -371,7 +461,7 @@ class _CheckInPageState extends State<CheckInPage> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 12),
 
                         // location
                         Row(
@@ -422,7 +512,69 @@ class _CheckInPageState extends State<CheckInPage> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 16),
+
+                        // ── distance / geofence info ──
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: _isInRange
+                                ? Colors.green.withOpacity(0.08)
+                                : Colors.red.withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: _isInRange
+                                  ? Colors.green.withOpacity(0.3)
+                                  : Colors.red.withOpacity(0.3),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                _isInRange
+                                    ? Icons.check_circle_outline
+                                    : Icons.warning_amber_rounded,
+                                color: _isInRange ? Colors.green : Colors.red,
+                                size: 22,
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      _isInRange
+                                          ? 'Dalam Jangkauan'
+                                          : 'Di Luar Jangkauan',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13,
+                                        color: _isInRange
+                                            ? Colors.green
+                                            : Colors.red,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      _distanceToOffice == double.infinity
+                                          ? 'Menghitung jarak...'
+                                          : 'Jarak: ${_distanceToOffice.toStringAsFixed(0)}m dari $_officeName '
+                                                '(maks ${_maxRadiusMeters.toInt()}m)',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurface
+                                            .withOpacity(0.6),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
 
                         // note
                         Row(
@@ -483,7 +635,7 @@ class _CheckInPageState extends State<CheckInPage> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 28),
+                        const SizedBox(height: 20),
 
                         // submit button
                         SizedBox(
@@ -493,18 +645,20 @@ class _CheckInPageState extends State<CheckInPage> {
                             onPressed:
                                 (isSubmitting ||
                                     isCheckedOut ||
-                                    todayStatus == 'izin')
+                                    todayStatus == 'izin' ||
+                                    !_isInRange)
                                 ? null
                                 : _handleSubmit,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: todayStatus == 'izin'
-                                  ? Colors.grey
-                                  : isCheckedOut
+                              backgroundColor:
+                                  (!_isInRange ||
+                                      todayStatus == 'izin' ||
+                                      isCheckedOut)
                                   ? Colors.grey
                                   : isCheckedIn
                                   ? Colors.orange
                                   : const Color(0xFF5B7BFF),
-                              disabledBackgroundColor: Colors.grey.shade700,
+                              disabledBackgroundColor: Colors.grey.shade400,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(14),
                               ),
@@ -520,7 +674,9 @@ class _CheckInPageState extends State<CheckInPage> {
                                     ),
                                   )
                                 : Text(
-                                    todayStatus == 'izin'
+                                    !_isInRange
+                                        ? 'Di Luar Jangkauan'
+                                        : todayStatus == 'izin'
                                         ? 'Sedang Izin'
                                         : isCheckedOut
                                         ? 'Sudah Check Out'
@@ -547,6 +703,47 @@ class _CheckInPageState extends State<CheckInPage> {
 
       // ── bottom nav ──
       bottomNavigationBar: _buildBottomNav(),
+    );
+  }
+
+  Widget _buildZoomButton({
+    required IconData icon,
+    required VoidCallback onPressed,
+    required bool isDark,
+    required bool isTop,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF2A2A2A) : Colors.white,
+        borderRadius: isTop
+            ? const BorderRadius.vertical(top: Radius.circular(10))
+            : const BorderRadius.vertical(bottom: Radius.circular(10)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.15),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: isTop
+              ? const BorderRadius.vertical(top: Radius.circular(10))
+              : const BorderRadius.vertical(bottom: Radius.circular(10)),
+          child: SizedBox(
+            width: 40,
+            height: 40,
+            child: Icon(
+              icon,
+              size: 20,
+              color: isDark ? Colors.white : Colors.black87,
+            ),
+          ),
+        ),
+      ),
     );
   }
 

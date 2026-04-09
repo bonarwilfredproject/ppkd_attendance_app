@@ -67,14 +67,17 @@ class _HistoryPageState extends State<HistoryPage> {
 
     final passwordController = TextEditingController();
 
-    final password = await showDialog<String>(
+    final success = await showDialog<bool>(
       context: context,
+      barrierDismissible: false,
       builder: (_) {
         bool isObscure = true;
+        String? errorText;
+        bool isDeleting = false;
 
         final isDark = Theme.of(context).brightness == Brightness.dark;
         return StatefulBuilder(
-          builder: (context, setStateDialog) {
+          builder: (dialogContext, setStateDialog) {
             return Dialog(
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
@@ -91,23 +94,47 @@ class _HistoryPageState extends State<HistoryPage> {
                     ),
                     const SizedBox(height: 12),
 
-                    const Text(
+                    Text(
                       "Konfirmasi Password",
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
+                        color: Theme.of(dialogContext).colorScheme.onSurface,
                       ),
                     ),
 
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 4),
+
+                    Text(
+                      "Masukkan password akun Anda untuk\nmenghapus data absensi ini",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(dialogContext)
+                            .colorScheme
+                            .onSurface
+                            .withOpacity(0.6),
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
 
                     TextField(
                       controller: passwordController,
                       obscureText: isObscure,
+                      enabled: !isDeleting,
                       style: TextStyle(
                         fontSize: 15,
-                        color: Theme.of(context).colorScheme.onSurface,
+                        color: Theme.of(dialogContext).colorScheme.onSurface,
                       ),
+                      onChanged: (_) {
+                        // Clear error when user starts typing
+                        if (errorText != null) {
+                          setStateDialog(() {
+                            errorText = null;
+                          });
+                        }
+                      },
                       decoration: InputDecoration(
                         labelText: "Password",
                         labelStyle: TextStyle(
@@ -130,17 +157,41 @@ class _HistoryPageState extends State<HistoryPage> {
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
                           borderSide: BorderSide(
-                            color: isDark
-                                ? Colors.grey.shade700
-                                : Colors.grey.shade300,
+                            color: errorText != null
+                                ? Colors.red
+                                : isDark
+                                    ? Colors.grey.shade700
+                                    : Colors.grey.shade300,
                           ),
                         ),
 
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
-                          borderSide: const BorderSide(
-                            color: Color(0xFF5B8DEF),
+                          borderSide: BorderSide(
+                            color: errorText != null
+                                ? Colors.red
+                                : const Color(0xFF5B8DEF),
                           ),
+                        ),
+
+                        errorBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(
+                            color: Colors.red,
+                          ),
+                        ),
+
+                        focusedErrorBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(
+                            color: Colors.red,
+                          ),
+                        ),
+
+                        errorText: errorText,
+                        errorStyle: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.red,
                         ),
 
                         suffixIcon: IconButton(
@@ -148,11 +199,13 @@ class _HistoryPageState extends State<HistoryPage> {
                             isObscure ? Icons.visibility_off : Icons.visibility,
                             color: Colors.grey,
                           ),
-                          onPressed: () {
-                            setStateDialog(() {
-                              isObscure = !isObscure;
-                            });
-                          },
+                          onPressed: isDeleting
+                              ? null
+                              : () {
+                                  setStateDialog(() {
+                                    isObscure = !isObscure;
+                                  });
+                                },
                         ),
                       ),
                     ),
@@ -163,7 +216,9 @@ class _HistoryPageState extends State<HistoryPage> {
                       children: [
                         Expanded(
                           child: OutlinedButton(
-                            onPressed: () => Navigator.pop(context),
+                            onPressed: isDeleting
+                                ? null
+                                : () => Navigator.pop(dialogContext, false),
                             style: OutlinedButton.styleFrom(
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
@@ -172,7 +227,11 @@ class _HistoryPageState extends State<HistoryPage> {
                             child: Text(
                               "Batal",
                               style: TextStyle(
-                                color: Theme.of(context).colorScheme.onSurface,
+                                color: isDeleting
+                                    ? Colors.grey
+                                    : Theme.of(dialogContext)
+                                        .colorScheme
+                                        .onSurface,
                               ),
                             ),
                           ),
@@ -180,19 +239,103 @@ class _HistoryPageState extends State<HistoryPage> {
                         const SizedBox(width: 10),
                         Expanded(
                           child: ElevatedButton(
-                            onPressed: () {
-                              Navigator.pop(context, passwordController.text);
-                            },
+                            onPressed: isDeleting
+                                ? null
+                                : () async {
+                                    // Validate empty password
+                                    final password =
+                                        passwordController.text.trim();
+                                    if (password.isEmpty) {
+                                      setStateDialog(() {
+                                        errorText = "Password wajib diisi";
+                                      });
+                                      return;
+                                    }
+
+                                    // Start loading
+                                    setStateDialog(() {
+                                      isDeleting = true;
+                                      errorText = null;
+                                    });
+
+                                    try {
+                                      // Step 1: Verify password via login API
+                                      final authRepo = AuthRepository();
+                                      final loginRes = await authRepo.login(
+                                        email,
+                                        password,
+                                      );
+
+                                      // Check if login was successful (password is correct)
+                                      if (loginRes['data'] == null ||
+                                          loginRes['data']['token'] == null) {
+                                        // Password is wrong
+                                        setStateDialog(() {
+                                          isDeleting = false;
+                                          errorText =
+                                              "Password salah, silakan coba lagi";
+                                        });
+                                        return;
+                                      }
+
+                                      // Step 2: Password verified, proceed with delete
+                                      final res = await repo.deleteAbsen(
+                                        id: id,
+                                        name: name,
+                                        email: email,
+                                        password: password,
+                                      );
+
+                                      final message = res['message'] ?? '';
+
+                                      if (message
+                                          .toLowerCase()
+                                          .contains("berhasil dihapus")) {
+                                        // Success — close dialog
+                                        if (dialogContext.mounted) {
+                                          Navigator.pop(dialogContext, true);
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(
+                                            SnackBar(
+                                              content: Text(message),
+                                              backgroundColor: Colors.green,
+                                            ),
+                                          );
+                                        }
+                                      } else {
+                                        // Delete API error (data not found, etc.)
+                                        setStateDialog(() {
+                                          isDeleting = false;
+                                          errorText = message;
+                                        });
+                                      }
+                                    } catch (e) {
+                                      setStateDialog(() {
+                                        isDeleting = false;
+                                        errorText =
+                                            "Terjadi kesalahan, coba lagi";
+                                      });
+                                    }
+                                  },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF5B7BFF),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
                             ),
-                            child: const Text(
-                              "Lanjut",
-                              style: TextStyle(color: Colors.white),
-                            ),
+                            child: isDeleting
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : const Text(
+                                    "Lanjut",
+                                    style: TextStyle(color: Colors.white),
+                                  ),
                           ),
                         ),
                       ],
@@ -206,29 +349,7 @@ class _HistoryPageState extends State<HistoryPage> {
       },
     );
 
-    if (password == null || password.isEmpty) return false;
-
-    try {
-      final res = await repo.deleteAbsen(
-        id: id,
-        name: name,
-        email: email,
-        password: password,
-      );
-
-      final message = res['message'] ?? '';
-
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
-
-      return message.toLowerCase().contains("berhasil dihapus");
-    } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("Error: $e")));
-      return false;
-    }
+    return success == true;
   }
 
   Widget _buildHistoryBadge(String? status, bool late) {
