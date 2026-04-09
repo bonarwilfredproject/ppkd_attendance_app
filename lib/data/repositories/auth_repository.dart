@@ -28,6 +28,10 @@ class AuthRepository {
     return await ApiService.get("/batches");
   }
 
+  Future<Map<String, dynamic>> getTrainings() async {
+    return await ApiService.get("/trainings");
+  }
+
   Future<Map<String, dynamic>> updatePhoto(String base64Image) async {
     return await ApiService.put("/profile/photo", {
       "profile_photo": base64Image,

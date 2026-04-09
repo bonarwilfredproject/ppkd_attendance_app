@@ -26,26 +26,26 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   void initState() {
     super.initState();
-    fetchBatches();
+    fetchInitialData();
   }
 
-  Future<void> fetchBatches() async {
+  Future<void> fetchInitialData() async {
     try {
-      final res = await repo.getBatches();
+      final resBatches = await repo.getBatches();
+      final resTrainings = await repo.getTrainings();
       setState(() {
-        batches = res['data'];
+        batches = resBatches['data'] ?? [];
+        trainings = resTrainings['data'] ?? [];
       });
     } catch (e) {
-      print("ERROR GET BATCHES: $e");
+      print("ERROR GET INITIAL DATA: $e");
     }
   }
 
   void handleBatchChange(int? id) {
-    final selectedBatch = batches.firstWhere((b) => b['id'] == id);
     setState(() {
       batchId = id;
-      trainings = selectedBatch['trainings'];
-      trainingId = null;
+      // Do not clear trainingId, since trainings are globally applicable
     });
   }
 
