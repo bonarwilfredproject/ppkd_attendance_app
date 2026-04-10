@@ -1191,6 +1191,7 @@ class _DashboardPageState extends State<DashboardPage> {
             ListView.separated(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
+              padding: const EdgeInsets.only(bottom: 20, top: 0),
               itemCount: historyData.length,
               separatorBuilder: (_, __) => const SizedBox(height: 12),
               itemBuilder: (context, index) {
@@ -1204,7 +1205,7 @@ class _DashboardPageState extends State<DashboardPage> {
 
                 return Container(
                   margin: const EdgeInsets.symmetric(horizontal: 20),
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: isDark ? const Color(0xFF2A2A2A) : Colors.white,
                     borderRadius: BorderRadius.circular(16),
@@ -1244,11 +1245,11 @@ class _DashboardPageState extends State<DashboardPage> {
                         ],
                       ),
                       
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
                       
                       // Times Grid
                       Container(
-                        padding: const EdgeInsets.all(12),
+                        padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
                           color: isDark ? const Color(0xFF1E1E1E) : Colors.grey.shade50,
                           borderRadius: BorderRadius.circular(12),
