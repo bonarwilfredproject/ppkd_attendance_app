@@ -34,7 +34,9 @@ class _ProfilePageState extends State<ProfilePage> {
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      decoration: BoxDecoration(color: isDark ? const Color(0xFF1E1E1E) : const Color(0xFFD4E600)),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E1E1E) : const Color(0xFFD4E600),
+      ),
       child: SafeArea(
         top: false,
         child: Padding(
@@ -45,6 +47,7 @@ class _ProfilePageState extends State<ProfilePage> {
               final selected = _selectedIndex == i;
               return GestureDetector(
                 onTap: () {
+                  final previousIndex = _selectedIndex;
                   setState(() => _selectedIndex = i);
 
                   if (i == 0) {
@@ -56,7 +59,10 @@ class _ProfilePageState extends State<ProfilePage> {
                       MaterialPageRoute(
                         builder: (_) => const CheckInPage(isCheckOut: false),
                       ),
-                    );
+                    ).then((_) {
+                      if (mounted)
+                        setState(() => _selectedIndex = previousIndex);
+                    });
                   }
                   if (i == 2) {
                     Navigator.pushReplacementNamed(context, '/history');
@@ -156,7 +162,11 @@ class _ProfilePageState extends State<ProfilePage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.logout, size: 50, color: Theme.of(context).colorScheme.onSurface),
+                Icon(
+                  Icons.logout,
+                  size: 50,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
                 const SizedBox(height: 16),
                 Text(
                   "Keluar dari akun?",
@@ -236,7 +246,9 @@ class _ProfilePageState extends State<ProfilePage> {
 
     return Scaffold(
       bottomNavigationBar: _buildBottomNav(),
-      backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFD4ED26),
+      backgroundColor: isDark
+          ? const Color(0xFF121212)
+          : const Color(0xFFD4ED26),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : Stack(
@@ -247,10 +259,18 @@ class _ProfilePageState extends State<ProfilePage> {
                     // Blue top
                     Container(
                       height: MediaQuery.of(context).size.height * 0.25,
-                      color: isDark ? const Color(0xFF1A237E) : const Color(0xFF5B8DEF),
+                      color: isDark
+                          ? const Color(0xFF1A237E)
+                          : const Color(0xFF5B8DEF),
                     ),
                     // Dark navy curve area
-                    Expanded(child: Container(color: isDark ? const Color(0xFF121212) : const Color(0xFFD4ED26))),
+                    Expanded(
+                      child: Container(
+                        color: isDark
+                            ? const Color(0xFF121212)
+                            : const Color(0xFFD4ED26),
+                      ),
+                    ),
                   ],
                 ),
 
@@ -259,7 +279,9 @@ class _ProfilePageState extends State<ProfilePage> {
                   clipper: _WaveClipper(),
                   child: Container(
                     height: MediaQuery.of(context).size.height * 0.55,
-                    color: isDark ? const Color(0xFF1E1E1E) : const Color(0xFF2D3250),
+                    color: isDark
+                        ? const Color(0xFF1E1E1E)
+                        : const Color(0xFF2D3250),
                   ),
                 ),
 
@@ -353,7 +375,9 @@ class _ProfilePageState extends State<ProfilePage> {
                             borderRadius: BorderRadius.circular(20),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(isDark ? 0.3 : 0.08),
+                                color: Colors.black.withOpacity(
+                                  isDark ? 0.3 : 0.08,
+                                ),
                                 blurRadius: 20,
                                 offset: const Offset(0, 4),
                               ),
@@ -438,7 +462,9 @@ class _ProfilePageState extends State<ProfilePage> {
                                   'Mode Gelap',
                                   style: TextStyle(
                                     fontWeight: FontWeight.w500,
-                                    color: Theme.of(context).colorScheme.onSurface,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurface,
                                   ),
                                 ),
                                 trailing: Switch(
@@ -468,7 +494,12 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildDivider() => Divider(height: 1, indent: 16, endIndent: 16, color: Theme.of(context).dividerColor);
+  Widget _buildDivider() => Divider(
+    height: 1,
+    indent: 16,
+    endIndent: 16,
+    color: Theme.of(context).dividerColor,
+  );
 
   Widget _buildMenuItem({
     required IconData icon,
@@ -487,7 +518,10 @@ class _ProfilePageState extends State<ProfilePage> {
           color: titleColor ?? Theme.of(context).colorScheme.onSurface,
         ),
       ),
-      trailing: Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4)),
+      trailing: Icon(
+        Icons.chevron_right,
+        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
+      ),
     );
   }
 }

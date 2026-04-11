@@ -110,9 +110,7 @@ class _RegisterPageState extends State<RegisterPage> {
   );
 
   InputDecoration _fieldDecoration({Widget? suffixIcon}) {
-    return InputDecoration(
-      suffixIcon: suffixIcon,
-    );
+    return InputDecoration(suffixIcon: suffixIcon);
   }
 
   // ── build ─────────────────────────────────────────────────
@@ -120,7 +118,9 @@ class _RegisterPageState extends State<RegisterPage> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFF3D4560),
+      backgroundColor: isDark
+          ? const Color(0xFF121212)
+          : const Color(0xFF3D4560),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -228,6 +228,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     _buildLabel('Jenis Kelamin'),
                     DropdownButtonFormField<String>(
                       value: jenisKelamin,
+                      isExpanded: true,
                       items: const [
                         DropdownMenuItem(value: "L", child: Text("Laki-laki")),
                         DropdownMenuItem(value: "P", child: Text("Perempuan")),
@@ -248,6 +249,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     _buildLabel('Pilih Batch'),
                     DropdownButtonFormField<int>(
                       value: batchId,
+                      isExpanded: true,
                       items: batches.map<DropdownMenuItem<int>>((batch) {
                         return DropdownMenuItem<int>(
                           value: batch['id'],
@@ -276,10 +278,15 @@ class _RegisterPageState extends State<RegisterPage> {
                     _buildLabel('Pilih Pelatihan'),
                     DropdownButtonFormField<int>(
                       value: trainingId,
+                      isExpanded: true,
                       items: trainings.map<DropdownMenuItem<int>>((training) {
                         return DropdownMenuItem<int>(
                           value: training['id'],
-                          child: Text(training['title']),
+                          child: Text(
+                            training['title'],
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         );
                       }).toList(),
                       onChanged: (value) => setState(() => trainingId = value),
@@ -349,7 +356,9 @@ class _RegisterPageState extends State<RegisterPage> {
                           text: TextSpan(
                             text: "Sudah punya akun? ",
                             style: TextStyle(
-                              color: isDark ? Colors.grey.shade400 : const Color(0xFF888888),
+                              color: isDark
+                                  ? Colors.grey.shade400
+                                  : const Color(0xFF888888),
                               fontSize: 14,
                             ),
                             children: [

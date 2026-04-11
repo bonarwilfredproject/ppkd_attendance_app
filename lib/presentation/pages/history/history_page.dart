@@ -669,7 +669,9 @@ class _HistoryPageState extends State<HistoryPage> {
                                         Icon(
                                           Icons.login,
                                           size: 14,
-                                          color: late ? Colors.red : Colors.green,
+                                          color: late
+                                              ? Colors.red
+                                              : Colors.green,
                                         ),
                                         const SizedBox(width: 6),
                                         const Text(
@@ -834,6 +836,7 @@ class _HistoryPageState extends State<HistoryPage> {
               final selected = _selectedIndex == i;
               return GestureDetector(
                 onTap: () {
+                  final previousIndex = _selectedIndex;
                   setState(() => _selectedIndex = i);
                   if (i == 0)
                     Navigator.pushReplacementNamed(context, '/dashboard');
@@ -843,7 +846,10 @@ class _HistoryPageState extends State<HistoryPage> {
                       MaterialPageRoute(
                         builder: (_) => const CheckInPage(isCheckOut: false),
                       ),
-                    );
+                    ).then((_) {
+                      if (mounted)
+                        setState(() => _selectedIndex = previousIndex);
+                    });
                   }
                   if (i == 3) Navigator.pushNamed(context, '/profile');
                 },
