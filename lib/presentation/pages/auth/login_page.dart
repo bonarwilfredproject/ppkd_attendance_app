@@ -114,6 +114,7 @@ class _LoginPageState extends State<LoginPage> {
             child: _buildAccentBlob(size: 64, opacity: 0.24),
           ),
           SafeArea(
+            bottom: false,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
