@@ -114,7 +114,7 @@ class _LoginPageState extends State<LoginPage> {
             child: _buildAccentBlob(size: 64, opacity: 0.24),
           ),
           SafeArea(
-            bottom: false,
+            // enable bottom safe area so bottom controls (Sign Up) are tappable
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [

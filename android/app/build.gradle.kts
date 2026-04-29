@@ -6,13 +6,27 @@ plugins {
 }
 import java.util.Properties
 import java.io.FileInputStream
+import org.gradle.api.GradleException
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 val keystoreProperties = Properties()
 val keystorePropertiesFile = rootProject.file("key.properties")
+val hasKeystoreProperties = keystorePropertiesFile.exists()
+val releaseBuildRequested = gradle.startParameter.taskNames.any { taskName ->
+    taskName.contains("Release", ignoreCase = true) || taskName.contains("Bundle", ignoreCase = true)
+}
 
-if (keystorePropertiesFile.exists()) {
+if (hasKeystoreProperties) {
     keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
+
+fun requiredKeystoreProperty(name: String): String {
+    return keystoreProperties.getProperty(name) ?: throw GradleException(
+        "Missing '$name' in ${keystorePropertiesFile.path}. " +
+            "Create android/key.properties and point it to your release keystore, or request an upload-key reset in Play Console if the old keystore is lost."
+    )
+}
+
 android {
     namespace = "com.example.ppkd_attendance_app"
     compileSdk = flutter.compileSdkVersion
@@ -21,10 +35,6 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
-    }
-
-    kotlinOptions {
-        jvmTarget = "17"
     }
 
     defaultConfig {
@@ -39,21 +49,36 @@ android {
     }
 
     signingConfigs {
-    create("release") {
-        keyAlias = keystoreProperties["keyAlias"] as String
-        keyPassword = keystoreProperties["keyPassword"] as String
-        storeFile = file(keystoreProperties["storeFile"] as String)
-        storePassword = keystoreProperties["storePassword"] as String
+        if (hasKeystoreProperties) {
+            create("release") {
+                keyAlias = requiredKeystoreProperty("keyAlias")
+                keyPassword = requiredKeystoreProperty("keyPassword")
+                storeFile = file(requiredKeystoreProperty("storeFile"))
+                storePassword = requiredKeystoreProperty("storePassword")
+            }
+        }
+    }
+
+    buildTypes {
+        getByName("release") {
+            if (hasKeystoreProperties) {
+                signingConfig = signingConfigs.getByName("release")
+            } else if (releaseBuildRequested) {
+                throw GradleException(
+                    "Missing ${keystorePropertiesFile.path}. Create android/key.properties before building a release APK/AAB. " +
+                        "If the old release keystore is lost but Play App Signing is enabled, request an upload-key reset in Play Console."
+                )
+            }
+            isMinifyEnabled = false
+            isShrinkResources = false
+        }
     }
 }
 
-buildTypes {
-    getByName("release") {
-        signingConfig = signingConfigs.getByName("release")
-        isMinifyEnabled = false
-        isShrinkResources = false
+kotlin {
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_17)
     }
-}
 }
 
 flutter {
